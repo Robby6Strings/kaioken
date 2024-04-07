@@ -46,7 +46,7 @@ declare global {
     type FC<T = {}> = (props: FCProps<T>) => JSX.Element
     type FCProps<T = {}> = T & { children?: JSX.Element[] }
 
-    type Hook<T> = T & { cleanup?: () => void }
+    type Hook<T> = T & { cleanup?: () => void; hooks?: Hook<unknown>[] }
 
     type InternalProps = { ref?: Kaioken.Ref<Element>; key?: JSX.ElementKey }
 
@@ -65,7 +65,7 @@ declare global {
     }
 
     type Signal<T> = BaseSignal<T> & {
-      subscribe: (fn: (value: T) => void) => () => void,
+      subscribe: (fn: (value: T) => void) => () => void
       (): BaseSignal<T>
     }
 
