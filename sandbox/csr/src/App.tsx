@@ -13,6 +13,7 @@ import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
 import { count, todo } from "./components/signals/test"
+import { SuspenseExample } from "./components/SuspenseExample"
 
 function Nav() {
   return (
@@ -32,6 +33,7 @@ function Nav() {
         <Link to="/keyed-list">Keyed list</Link>
         <Link to="/context">Context</Link>
         <Link to="/useAsync">useAsync</Link>
+        <Link to="/suspense">Suspense</Link>
         <GithubIcon />
       </div>
     </nav>
@@ -108,6 +110,7 @@ export function App() {
           <Route path="/keyed-list" element={KeyedList} />
           <Route path="/context" element={ContextExample} />
           <Route path="/useAsync" element={UseAsyncExample} />
+          <Route path="/suspense" element={SuspenseExample} />
           <Route path="*" element={() => <h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>

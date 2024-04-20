@@ -1,5 +1,6 @@
 import { AppContext, AppContextOptions } from "./appContext.js"
 import {
+  encodeHtmlEntities,
   isValidChild,
   isVNode,
   propFilters,
@@ -15,15 +16,17 @@ import { assertValidElementProps } from "./props.js"
 import { Signal } from "./signal.js"
 
 export type * from "./types"
+export * from "./appContext.js"
 export * from "./hooks/index.js"
 export * from "./component.js"
 export * from "./context.js"
-export * from "./appContext.js"
+export * from "./errorBoundary.js"
 export * from "./memo.js"
 export * from "./portal.js"
 export * from "./router.js"
 export { signal } from "./signal.js"
 export * from "./store.js"
+export * from "./suspense.js"
 export * from "./transition.js"
 
 export { mount, createElement, fragment, renderToString }
@@ -169,14 +172,4 @@ function renderToString_internal<T extends Record<string, unknown>>(
   }
 
   return renderToString_internal(type(props), el, props)
-}
-
-function encodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
-    .replace(/\//g, "&#47;")
 }

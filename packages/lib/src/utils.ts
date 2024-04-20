@@ -12,15 +12,18 @@ export {
   getNodeAppContext,
   getCurrentNode,
   noop,
+  encodeHtmlEntities,
   propFilters,
   selfClosingTags,
   svgTags,
   booleanAttributes,
 }
 
+type VNode = Kaioken.VNode
+
 const noop = Object.freeze(() => {})
 
-function getNodeAppContext(node: Kaioken.VNode): AppContext | undefined {
+function getNodeAppContext(node: VNode): AppContext | undefined {
   return nodeToCtxMap.get(node)
 }
 
@@ -28,7 +31,7 @@ function getCurrentNode() {
   return node.current
 }
 
-function isVNode(thing: unknown): thing is Kaioken.VNode {
+function isVNode(thing: unknown): thing is VNode {
   return typeof thing === "object" && thing !== null && "type" in thing
 }
 
@@ -37,12 +40,12 @@ function isValidChild(child: unknown) {
 }
 
 function vNodeContains(
-  haystack: Kaioken.VNode,
-  needle: Kaioken.VNode,
+  haystack: VNode,
+  needle: VNode,
   checkSiblings = false
 ): boolean {
   if (haystack === needle) return true
-  const stack: Kaioken.VNode[] = [haystack]
+  const stack: VNode[] = [haystack]
   while (stack.length) {
     const n = stack.pop()!
     if (n === needle) return true
@@ -53,12 +56,9 @@ function vNodeContains(
   return false
 }
 
-function applyRecursive(
-  node: Kaioken.VNode,
-  func: (node: Kaioken.VNode) => void
-) {
-  const nodes: Kaioken.VNode[] = [node]
-  const apply = (node: Kaioken.VNode) => {
+function applyRecursive(node: VNode, func: (node: VNode) => void) {
+  const nodes: VNode[] = [node]
+  const apply = (node: VNode) => {
     func(node)
     node.child && nodes.push(node.child)
     node.sibling && nodes.push(node.sibling)
@@ -114,6 +114,16 @@ function shallowCompare<T>(objA: T, objB: T) {
     }
   }
   return true
+}
+
+function encodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/\//g, "&#47;")
 }
 
 const propFilters = {

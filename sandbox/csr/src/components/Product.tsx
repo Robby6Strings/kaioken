@@ -4,11 +4,6 @@ import { Link } from "./atoms/Link"
 import { H3 } from "./atoms/Heading"
 import { Container } from "./atoms/Container"
 
-interface Product {
-  title: string
-  thumbnail: string
-}
-
 export function ProductPage({ query: { id } }: RouteChildProps) {
   const [data, loading, error] = useAsync<Product>(
     () =>
