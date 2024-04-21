@@ -9,8 +9,9 @@ import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
 import { Signal } from "./signal.js"
+import { renderMode } from "./globals"
 
-export { commitWork, createDom }
+export { commitWork, createDom, updateDom }
 
 type VNode = Kaioken.VNode
 
@@ -140,7 +141,10 @@ function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
 
     if (propFilters.internalProps.includes(key)) return
 
-    if (propFilters.isEvent(key) && prevProps[key] !== nextProps[key]) {
+    if (
+      propFilters.isEvent(key) &&
+      (prevProps[key] !== nextProps[key] || renderMode.current === "hydrate")
+    ) {
       const eventType = key.toLowerCase().substring(2)
       if (key in prevProps) dom.removeEventListener(eventType, prevProps[key])
       if (key in nextProps) dom.addEventListener(eventType, nextProps[key])
