@@ -218,8 +218,8 @@ export class Scheduler {
         } else {
           this.updateHostComponent(vNode)
         }
-      } catch (error) {
-        const e = Component.emitThrow(vNode, error)
+      } catch (value) {
+        const e = Component.emitThrow(vNode, value)
         if (e) console.error("[kaioken]: unhandled error", e)
       }
       if (vNode.child) {

@@ -19,14 +19,9 @@ export class Suspense extends Component<SuspenseProps> {
 
     if (!this.state.promises.has(value)) {
       this.state.promises.add(value)
-      this.setState(() => ({ promises: this.state.promises, resolved: false }))
+      this.setState(() => ({ ...this.state, resolved: false }))
       value
-        .then(() =>
-          this.setState(() => ({
-            promises: this.state.promises,
-            resolved: true,
-          }))
-        )
+        .then(() => this.setState(() => ({ ...this.state, resolved: true })))
         .catch((err) => Component.emitThrow(this.vNode.parent!, err))
     }
     return true
