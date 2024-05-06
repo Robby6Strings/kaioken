@@ -1,6 +1,6 @@
 // https://vike.dev/onRenderClient
 import type { OnRenderClientAsync } from "vike/types"
-import { hydrate } from "kaioken/ssr"
+import { hydrate } from "kaioken/ssr/client"
 import { getTitle } from "./utils"
 import { App } from "./App"
 

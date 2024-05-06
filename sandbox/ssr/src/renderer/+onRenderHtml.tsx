@@ -1,7 +1,7 @@
 // Environment: server
 import { escapeInject } from "vike/server"
 import type { OnRenderHtmlAsync } from "vike/types"
-import { renderToStream } from "kaioken/dist/ssr/render"
+import { renderToStream } from "kaioken/ssr/server"
 import { getTitle } from "./utils"
 import { App } from "./App"
 
