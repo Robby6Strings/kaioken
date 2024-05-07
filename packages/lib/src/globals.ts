@@ -25,5 +25,5 @@ const ctx = {
 }
 
 const renderMode = {
-  current: "dom" as "dom" | "string" | "hydrate",
+  current: "dom" as "dom" | "string" | "hydrate" | "stream",
 }

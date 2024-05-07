@@ -13,3 +13,9 @@ export const elementTypes = {
   text: "#text",
   fragment: "KAIOKEN_FRAGMENT",
 } as const
+
+export const SSR = {
+  lazyContentMarkerIdentifier: "lazy-marker",
+  lazyContentDispatcherIdentifier: "lazy-dispatch",
+  lazyContentDispatchEventName: "lazy-content",
+} as const

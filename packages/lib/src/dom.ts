@@ -248,13 +248,15 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     const dom = n.dom
 
     if (dom) {
-      if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
-        if (!mntParent) {
-          mntParent = getDomParent(n)
+      if (renderMode.current !== "hydrate") {
+        if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
+          if (!mntParent) {
+            mntParent = getDomParent(n)
+          }
+          placeDom(n, dom, prevSiblingDom, mntParent)
+        } else if (n.effectTag === EffectTag.UPDATE) {
+          updateDom(n, dom)
         }
-        placeDom(n, dom, prevSiblingDom, mntParent)
-      } else if (n.effectTag === EffectTag.UPDATE) {
-        updateDom(n, dom)
       }
 
       if (n.props.ref) {

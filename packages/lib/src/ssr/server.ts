@@ -10,33 +10,65 @@ import {
   selfClosingTags,
 } from "../utils.js"
 import { Signal } from "../signal.js"
-import { elementTypes as et } from "../constants.js"
+import { SSR, elementTypes as et } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
 export { renderToStream }
 
 type VNode = Kaioken.VNode
 
+type PromiseQueueItem = {
+  promise: Promise<any>
+  callback: { (data: any): Promise<void> }
+}
+
+type RequestState = {
+  stream: Readable
+  c: AppContext
+  promiseQueue: Array<PromiseQueueItem>
+}
+
 function renderToStream<T extends Record<string, unknown>>(
   el: (props: T) => JSX.Element,
   elProps = {} as T
 ): Readable {
-  const stream = new Readable({
-    objectMode: true,
-  })
   const prev = renderMode.current
-  renderMode.current = "string"
+  renderMode.current = "stream"
+
+  const state: RequestState = {
+    stream: new Readable({
+      objectMode: true,
+    }),
+    c: new AppContext(el, elProps),
+    promiseQueue: [],
+  }
+
   const c = (ctx.current = new AppContext(el, elProps))
   c.rootNode = el instanceof Function ? createElement(el, elProps) : el
-  renderToStream_internal(stream, c.rootNode, undefined, elProps)
-  contexts.splice(contexts.indexOf(c), 1)
-  renderMode.current = prev
-  stream.push(null)
-  return stream
+  renderToStream_internal(state, c.rootNode, undefined, elProps)
+
+  if (state.promiseQueue.length) {
+    Promise.allSettled(
+      state.promiseQueue.map(async (item) => {
+        const data = await item.promise
+        return item.callback(data)
+      })
+    ).then(() => {
+      state.stream.push(null)
+      contexts.splice(contexts.indexOf(c), 1)
+      renderMode.current = prev
+    })
+  } else {
+    state.stream.push(null)
+    contexts.splice(contexts.indexOf(c), 1)
+    renderMode.current = prev
+  }
+
+  return state.stream
 }
 
 function renderToStream_internal<T extends Record<string, unknown>>(
-  stream: Readable,
+  state: RequestState,
   el: JSX.Element,
   parent?: VNode | undefined,
   elProps = {} as T
@@ -47,31 +79,34 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     case "boolean":
       return
     case "string":
-      return pushToReadable(stream, encodeHtmlEntities(el))
+      state.stream.push(encodeHtmlEntities(el))
+      return
     case "number":
-      return pushToReadable(stream, encodeHtmlEntities(el.toString()))
+      state.stream.push(encodeHtmlEntities(el.toString()))
+      return
     case "function":
-      return renderToStream_internal(stream, createElement(el, elProps))
+      return renderToStream_internal(state, createElement(el, elProps))
   }
 
   if (el instanceof Array) {
-    return el.forEach((c) =>
-      renderToStream_internal(stream, c, parent, elProps)
-    )
+    return el.forEach((c) => renderToStream_internal(state, c, parent, elProps))
   }
-  if (Signal.isSignal(el))
-    return pushToReadable(stream, encodeHtmlEntities(el.value.toString()))
+  if (Signal.isSignal(el)) {
+    state.stream.push(encodeHtmlEntities(el.value.toString()))
+    return
+  }
 
   el.parent = parent
   nodeToCtxMap.set(el, ctx.current)
   const props = el.props ?? {}
   const children = props.children ?? []
   const type = el.type
-  if (type === et.text)
-    return pushToReadable(stream, encodeHtmlEntities(props.nodeValue ?? ""))
-  if (type === et.fragment) {
-    children.forEach((c) => renderToStream_internal(stream, c, el, props))
+  if (type === et.text) {
+    state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
+  }
+  if (type === et.fragment) {
+    return children.forEach((c) => renderToStream_internal(state, c, el, props))
   }
 
   if (typeof type === "string") {
@@ -84,12 +119,11 @@ function renderToStream_internal<T extends Record<string, unknown>>(
       )
       .join(" ")
 
-    pushToReadable(stream, `<${type} ${attrs}${isSelfClosing ? "/>" : ">"}`)
+    state.stream.push(`<${type} ${attrs}${isSelfClosing ? "/>" : ">"}`)
 
     if (!isSelfClosing) {
       if ("innerHTML" in props) {
-        pushToReadable(
-          stream,
+        state.stream.push(
           String(
             Signal.isSignal(props.innerHTML)
               ? props.innerHTML.value
@@ -97,26 +131,55 @@ function renderToStream_internal<T extends Record<string, unknown>>(
           )
         )
       } else {
-        children.forEach((c) => renderToStream_internal(stream, c, el, c.props))
+        children.forEach((c) => renderToStream_internal(state, c, el, c.props))
       }
 
-      pushToReadable(stream, `</${type}>`)
+      state.stream.push(`</${type}>`)
     }
 
     return
   }
 
-  node.current = el
-  if (Component.isCtor(type)) {
-    const instance = new (type as unknown as {
-      new (props: Record<string, unknown>): Component
-    })(props)
-    return renderToStream_internal(stream, instance.render(), el, props)
+  let isClassComponent = false
+  try {
+    node.current = el
+    if (Component.isCtor(type)) {
+      el.instance = new (type as unknown as {
+        new (props: Record<string, unknown>): Component
+      })(props)
+      isClassComponent = true
+      return renderToStream_internal(state, el.instance.render(), el, props)
+    }
+
+    return renderToStream_internal(state, type(props), el, props)
+  } catch (value) {
+    const e = Component.emitThrow(el, value)
+    if (Array.isArray(e)) {
+      const [promise, fallback] = e as [Promise<any>, JSX.Element]
+      renderToStream_internal(state, fallback, el, props)
+
+      const id = crypto.randomUUID()
+      state.stream.push(`<!--${SSR.lazyContentMarkerIdentifier}:${id}-->`)
+      state.promiseQueue.push({
+        promise,
+        callback: async () => {
+          state.stream.push(`<k-lazy id="${id}">`)
+          if (isClassComponent) {
+            renderToStream_internal(state, el.instance!.render(), el, props)
+          } else {
+            renderToStream_internal(state, (type as any)(props), el, props)
+          }
+          state.stream.push(
+            `</k-lazy>
+            <script type="module" id="k-lazy-${id}">
+              document.getElementById("k-lazy-${id}").remove();
+              window.__kaioken.dispatchLazyContent?.('${id}');
+            </script>`
+          )
+        },
+      })
+    } else if (e) {
+      console.error("[kaioken]: renderToStream_internal - unhandled throw", e)
+    }
   }
-
-  return renderToStream_internal(stream, type(props), el, props)
-}
-
-function pushToReadable(stream: Readable, value: string): void {
-  stream.push(value)
 }

@@ -30,17 +30,17 @@ abstract class Component<T = Record<string, unknown>> {
     return !!type && typeof type === "function" && componentSymbol in type
   }
 
-  static emitThrow(node: Kaioken.VNode, error: unknown) {
+  static emitThrow(node: Kaioken.VNode, value: unknown) {
     try {
       let n: Kaioken.VNode | undefined = node
       while (n) {
-        if (n.instance?.handleThrow?.(error)) return
+        if (n.instance?.handleThrow?.(value)) return
         n = n.parent
       }
     } catch (error) {
       return error
     }
-    return error
+    return value
   }
 
   handleThrow?(value: unknown): boolean
