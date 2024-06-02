@@ -128,7 +128,7 @@ function setStyleProp(
 }
 
 function updateDom(node: VNode, dom: HTMLElement | SVGElement | Text) {
-  if (node.instance?.rootDom) return node.instance.rootDom
+  if (node.instance?.doNotModifyDom) return node.dom
   const prevProps: Record<string, any> = node.prev?.props ?? {}
   const nextProps: Record<string, any> = node.props ?? {}
 
@@ -168,10 +168,10 @@ type DomParentSearchResult = {
 }
 function getDomParent(node: VNode): DomParentSearchResult {
   let domParentNode: VNode | undefined = node.parent ?? node.prev?.parent
-  let domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
+  let domParent = domParentNode?.dom
   while (domParentNode && !domParent) {
     domParentNode = domParentNode.parent
-    domParent = domParentNode?.instance?.rootDom ?? domParentNode?.dom
+    domParent = domParentNode?.dom
   }
 
   if (!domParent || !domParentNode) {
@@ -303,12 +303,14 @@ function commitDeletion(vNode: VNode, deleteSibling = false) {
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
+    let skipDomRemoval = false
     if (Component.isCtor(n.type) && n.instance) {
       n.instance.componentWillUnmount?.()
+      if (n.instance.doNotModifyDom) skipDomRemoval = true
     }
     while (n.hooks?.length) cleanupHook(n.hooks.pop()!)
     while (n.subs?.length) Signal.unsubscribeNode(n, n.subs.pop()!)
-    if (n.dom?.isConnected) n.dom.remove()
+    if (n.dom?.isConnected && !skipDomRemoval) n.dom.remove()
     delete n.dom
     if (deleteSibling && n.sibling) stack.push(n.sibling)
     if (n.child) stack.push(n.child)

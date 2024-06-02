@@ -1,14 +1,26 @@
 import "./index.css"
 import { App } from "./App"
-import { mount, renderToString } from "kaioken"
+import { AppContext, mount, renderToString } from "kaioken"
 
 const root = document.getElementById("app")!
 
-mount(App, { root, maxFrameMs: 16, name: "CSR app" })
+declare global {
+  interface Window {
+    kaiokenInstance: AppContext
+  }
+}
+
+const kaiokenInstance = await mount(App, {
+  root,
+  maxFrameMs: 16,
+  name: "CSR app",
+})
+
+kaiokenInstance.setProps((old) => ({ ...old, test: 456 }))
 
 let testRenderToString = false
 if (testRenderToString) {
-  const html = renderToString(() => App())
+  const html = renderToString(App, { test: 123 })
   console.log("renderToString", html)
 }
 // import("kaioken")
