@@ -7,29 +7,24 @@ type CacheOptions = {
   cacheDuration?: number
 }
 
-const cache = new Map<string, { promise: Promise<unknown>; ts: number }>()
+const cache = new Map()
 function fetchWithCache<T>(url: string, options?: CacheOptions): Promise<T> {
-  const match = cache.get(url)
-  if (match) {
-    if (
-      options?.cacheDuration &&
-      match.ts + options.cacheDuration < Date.now()
-    ) {
-      cache.delete(url)
-    } else {
-      return match.promise as Promise<T>
+  if (!cache.has(url)) {
+    cache.set(
+      url,
+      fetch(url).then(async (r) => {
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        if (r.status >= 400) {
+          throw new Error("Bad response")
+        }
+        return r.json()
+      })
+    )
+    if (options?.cacheDuration) {
+      setTimeout(() => cache.delete(url), options.cacheDuration)
     }
   }
-  const promise = fetch(url).then(async (r) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    if (r.status >= 400) {
-      throw new Error("Bad response")
-    }
-    return r.json()
-  })
-
-  cache.set(url, { promise, ts: Date.now() })
-  return promise
+  return cache.get(url)
 }
 
 function use<T>(promise: Promise<T>) {
@@ -82,7 +77,7 @@ export function SuspenseExample() {
 function SomeAsyncComponent() {
   const data = use<Product>(
     fetchWithCache(`https://dummyjson.com/products/${productId}`, {
-      cacheDuration: 3000,
+      cacheDuration: 10_000,
     })
   )
 

@@ -67,11 +67,11 @@ function renderToStream<T extends Record<string, unknown>>(
   return state.stream
 }
 
-function renderToStream_internal<T extends Record<string, unknown>>(
+function renderToStream_internal(
   state: RequestState,
   el: JSX.Element,
   parent?: VNode | undefined,
-  elProps = {} as T
+  elProps = {} as Record<string, unknown>
 ): void {
   if (el === null) return
   if (el === undefined) return
@@ -160,6 +160,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
 
       const id = crypto.randomUUID()
       state.stream.push(`<!--${SSR.lazyContentMarkerIdentifier}:${id}-->`)
+
       state.promiseQueue.push({
         promise,
         callback: async () => {
@@ -171,9 +172,17 @@ function renderToStream_internal<T extends Record<string, unknown>>(
           }
           state.stream.push(
             `</k-lazy>
-            <script type="module" id="k-lazy-${id}">
-              document.getElementById("k-lazy-${id}").remove();
-              window.__kaioken.dispatchLazyContent?.('${id}');
+            <script type="module" id="k-lazyscript-${id}">
+              const thisScript = document.getElementById("k-lazyscript-${id}");
+              const el = thisScript.previousSibling;
+              
+              thisScript.remove();
+              el.remove();
+
+              document.addEventListener("DOMContentLoaded", () => {
+                console.log("k-lazyscript-${id} loaded", window.__kaioken);
+                window.__kaioken.dispatchLazyContent?.('${id}', el);
+              })
             </script>`
           )
         },

@@ -13,7 +13,6 @@ export {
   getCurrentNode,
   encodeHtmlEntities,
   noop,
-  encodeHtmlEntities,
   propFilters,
   selfClosingTags,
   svgTags,

@@ -313,7 +313,13 @@ function handleTextNodeSplitting(vNode: VNode) {
   }
 }
 
-const currentDom = () =>
-  hydrationStack[hydrationStack.length - 1].childNodes[
+const currentDom = () => {
+  let n = hydrationStack[hydrationStack.length - 1].childNodes[
     childIndexStack[childIndexStack.length - 1]++
-  ] as HTMLElement | SVGElement | Text | undefined
+  ] as HTMLElement | SVGElement | Text | Comment
+
+  while (n instanceof Comment)
+    n = n.nextSibling as HTMLElement | SVGElement | Text | Comment
+
+  return n
+}
