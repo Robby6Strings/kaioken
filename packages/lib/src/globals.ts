@@ -17,13 +17,13 @@ const node = {
   current: undefined as Kaioken.VNode | undefined,
 }
 
-const hydrationStack = [] as Array<HTMLElement | SVGElement | Text>
-const childIndexStack = [] as Array<number>
-
 const ctx = {
   current: undefined as unknown as AppContext<any>,
 }
 
 const renderMode = {
-  current: "dom" as "dom" | "string" | "hydrate" | "stream",
+  current: "dom" as "dom" | "hydrate" | "string" | "stream",
 }
+
+const hydrationStack = [] as Array<HTMLElement | SVGElement | Text>
+const childIndexStack = [] as Array<number>

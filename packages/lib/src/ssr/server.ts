@@ -39,7 +39,7 @@ function renderToStream<T extends Record<string, unknown>>(
     stream: new Readable({
       objectMode: true,
     }),
-    c: new AppContext(el, elProps),
+    c: new AppContext<any>(el, elProps),
     promiseQueue: [],
   }
 

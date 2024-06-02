@@ -247,21 +247,17 @@ function commitWork(ctx: AppContext, vNode: VNode) {
     let [n, prevSiblingDom, mntParent] = stack.pop()!
     const dom = n.dom
 
-    if (dom) {
-      if (renderMode.current !== "hydrate") {
-        if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
-          if (!mntParent) {
-            mntParent = getDomParent(n)
-          }
-          placeDom(n, dom, prevSiblingDom, mntParent)
-        } else if (n.effectTag === EffectTag.UPDATE) {
-          updateDom(n, dom)
+    if (dom && renderMode.current !== "hydrate") {
+      if (!dom.isConnected || n.effectTag === EffectTag.PLACEMENT) {
+        if (!mntParent) {
+          mntParent = getDomParent(n)
         }
+        placeDom(n, dom, prevSiblingDom, mntParent)
+      } else if (n.effectTag === EffectTag.UPDATE) {
+        updateDom(n, dom)
       }
-
-      if (n.props.ref) {
-        n.props.ref.current = dom
-      }
+    } else if (dom && n.props.ref) {
+      n.props.ref.current = dom
     }
 
     if (commitSibling && n.sibling) {

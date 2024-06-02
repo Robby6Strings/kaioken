@@ -1,12 +1,16 @@
 import type { AppContext } from "./appContext"
 import { Component } from "./component.js"
-import { EffectTag, elementFreezeSymbol, elementTypes } from "./constants.js"
+import {
+  EffectTag,
+  elementFreezeSymbol,
+  elementTypes as et,
+} from "./constants.js"
 import { commitWork, createDom, updateDom } from "./dom.js"
 import {
   childIndexStack,
   ctx,
-  node,
   hydrationStack,
+  node,
   renderMode,
 } from "./globals.js"
 import { assertValidElementProps } from "./props.js"
@@ -191,7 +195,7 @@ export class Scheduler {
           this.updateClassComponent(vNode)
         } else if (vNode.type instanceof Function) {
           this.updateFunctionComponent(vNode)
-        } else if (vNode.type === elementTypes.fragment) {
+        } else if (vNode.type === et.fragment) {
           vNode.child = reconcileChildren(
             this.appCtx,
             vNode,
@@ -203,6 +207,13 @@ export class Scheduler {
       } catch (value) {
         const e = Component.emitThrow(vNode, value)
         if (e) console.error("[kaioken]: unhandled error", e)
+      }
+      if (vNode.child) {
+        if (renderMode.current === "hydrate" && vNode.dom) {
+          hydrationStack.push(vNode.dom)
+          childIndexStack.push(0)
+        }
+        return vNode.child
       }
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {
@@ -274,7 +285,7 @@ export class Scheduler {
           )
         }
         vNode.dom = dom
-        if (vNode.type === elementTypes.text) {
+        if (vNode.type === et.text) {
           handleTextNodeSplitting(vNode)
         } else {
           updateDom(vNode, vNode.dom)
@@ -289,13 +300,12 @@ export class Scheduler {
     vNode.child = reconcileChildren(this.appCtx, vNode, vNode.props.children)
   }
 }
-
 function handleTextNodeSplitting(vNode: VNode) {
-  if (vNode.sibling?.type === elementTypes.text) {
+  if (vNode.sibling?.type === et.text) {
     let prev = vNode
     let sibling: VNode | undefined = vNode.sibling
     while (sibling) {
-      if (sibling.type !== elementTypes.text) break
+      if (sibling.type !== et.text) break
       sibling.dom = (prev.dom as Text)!.splitText(prev.props.nodeValue.length)
       prev = sibling
       sibling = sibling.sibling

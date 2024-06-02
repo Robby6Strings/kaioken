@@ -11,6 +11,7 @@ export {
   shallowCompare,
   getNodeAppContext,
   getCurrentNode,
+  encodeHtmlEntities,
   noop,
   encodeHtmlEntities,
   propFilters,

@@ -8,7 +8,7 @@ import { App } from "./App"
 export const onRenderHtml: OnRenderHtmlAsync = async (
   pageContext
 ): ReturnType<OnRenderHtmlAsync> => {
-  const pageStream = renderToStream(App, { pageContext })
+  const stream = renderToStream(App, { pageContext })
   return escapeInject`<!DOCTYPE html>
     <html>
       <head>
@@ -18,7 +18,7 @@ export const onRenderHtml: OnRenderHtmlAsync = async (
         <title>${getTitle(pageContext)}</title>
       </head>
       <body>
-        <div id="page-root">${pageStream}</div>
+        <div id="page-root">${stream}</div>
         <div id="portal"></div>
       </body>
     </html>`

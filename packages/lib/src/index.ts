@@ -7,6 +7,7 @@ import {
   propToHtmlAttr,
   propValueToHtmlAttrValue,
   selfClosingTags,
+  encodeHtmlEntities,
 } from "./utils.js"
 import { Component } from "./component.js"
 import { elementTypes as et } from "./constants.js"
