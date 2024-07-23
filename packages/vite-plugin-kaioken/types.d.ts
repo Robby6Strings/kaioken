@@ -1,3 +1,5 @@
 import type { Plugin } from "vite"
-declare const plugin: (options?: { devtools: boolean }) => Plugin
-export default plugin
+export interface KaiokenPluginOptions {
+  devtools?: boolean
+}
+export default function kaioken(opts?: KaiokenPluginOptions): Plugin

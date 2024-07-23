@@ -1,7 +1,6 @@
 import { SignalKey } from "./constants.js"
 import { node, renderMode } from "./globals.js"
 import { useHook } from "./hooks/utils.js"
-import { getNodeAppContext } from "./utils.js"
 
 export const signal = <T>(initial: T) => {
   return !node.current
@@ -32,24 +31,24 @@ export class Signal<T> {
     return this.#value
   }
 
-  toString() {
-    if (node.current) Signal.subscribeNode(node.current, this)
-    return `${this.#value}`
-  }
-
   set value(next: T) {
     this.#value = next
     this.notify()
   }
 
+  toString() {
+    if (node.current) Signal.subscribeNode(node.current, this)
+    return `${this.#value}`
+  }
+
   static isSignal(x: any): x is Signal<any> {
-    return x && x[SignalKey]
+    return typeof x === "object" && !!x && SignalKey in x
   }
 
   static subscribeNode(node: Kaioken.VNode, signal: Signal<any>) {
     if (renderMode.current !== "dom" && renderMode.current !== "hydrate") return
     if (!node.subs) node.subs = [signal]
-    else if (node.subs.indexOf(signal) == -1) node.subs.push(signal)
+    else if (node.subs.indexOf(signal) === -1) node.subs.push(signal)
     signal.#subscribers.add(node)
   }
 
@@ -70,7 +69,7 @@ export class Signal<T> {
       if (consumer instanceof Function) {
         return consumer(this.#value)
       }
-      getNodeAppContext(consumer)?.requestUpdate(consumer)
+      consumer.ctx.requestUpdate(consumer)
     })
   }
 }

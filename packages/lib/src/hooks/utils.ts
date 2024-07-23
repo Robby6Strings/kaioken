@@ -1,15 +1,33 @@
-import { ctx, nodeToCtxMap, node, renderMode } from "../globals.js"
-
+import { warnDeprecated } from "../warning.js"
+import { ctx, node, renderMode } from "../globals.js"
+export { sideEffectsEnabled } from "../utils.js"
 export {
   cleanupHook,
   depsRequireChange,
   useHook,
   shouldExecHook,
+  useCurrentNode,
+  type Hook,
   type HookCallback,
   type HookCallbackState,
 }
 
+const useCurrentNode = () => {
+  const n = node.current
+  if (!n) error_hookMustBeCalledTopLevel("useCurrentNode")
+  return n
+}
+
+let hasWarnedShouldExecHook = false
 const shouldExecHook = () => {
+  if (!hasWarnedShouldExecHook) {
+    hasWarnedShouldExecHook = true
+    warnDeprecated(
+      "shouldExecHook()",
+      "due to ambiguity",
+      "Use sideEffectsEnabled() instead"
+    )
+  }
   return renderMode.current === "dom" || renderMode.current === "hydrate"
 }
 
@@ -22,26 +40,34 @@ type HookCallbackState<T> = {
   queueEffect: typeof ctx.current.queueEffect
   vNode: Kaioken.VNode
 }
-type HookCallback<T, U> = (state: HookCallbackState<T>) => U
+type HookCallback<T> = (state: HookCallbackState<T>) => any
 
-function useHook<T, U>(
+let currentHookName: string | null = null
+const nestedHookWarnings = new Set<string>()
+
+function useHook<T, U extends HookCallback<T>>(
   hookName: string,
-  hookData: Hook<T>,
-  callback: HookCallback<T, U>
-): U {
+  hookDataOrInitializer: (() => Hook<T>) | Hook<T>,
+  callback: U
+): ReturnType<U> {
+  if (
+    currentHookName !== null &&
+    !nestedHookWarnings.has(hookName + currentHookName)
+  ) {
+    nestedHookWarnings.add(hookName + currentHookName)
+    throw new Error(
+      `[kaioken]: nested primitive "useHook" calls are not supported. "${hookName}" was called inside "${currentHookName}". Strange things may happen.`
+    )
+  }
   const vNode = node.current
-  if (!vNode)
-    throw new Error(
-      `[kaioken]: hook "${hookName}" must be used at the top level of a component or inside another hook.`
-    )
-  const ctx = nodeToCtxMap.get(vNode)
-  if (!ctx)
-    throw new Error(
-      `[kaioken]: an unknown error occured during execution of hook "${hookName}" (could not ascertain ctx). Seek help from the developers.`
-    )
-
+  if (!vNode) error_hookMustBeCalledTopLevel(hookName)
+  const ctx = vNode.ctx
   const oldHook = vNode.prev && (vNode.prev.hooks?.at(ctx.hookIndex) as Hook<T>)
-  const hook = oldHook ?? hookData
+  const hook =
+    oldHook ??
+    (typeof hookDataOrInitializer === "function"
+      ? hookDataOrInitializer()
+      : hookDataOrInitializer)
 
   if (!oldHook) hook.name = hookName
   else if (oldHook.name !== hookName) {
@@ -50,16 +76,30 @@ function useHook<T, U>(
     )
   }
 
+  currentHookName = hookName
+
   if (!vNode.hooks) vNode.hooks = []
   vNode.hooks[ctx.hookIndex++] = hook
+  try {
+    const res = callback({
+      hook,
+      oldHook,
+      update: () => ctx.requestUpdate(vNode),
+      queueEffect: ctx.queueEffect.bind(ctx),
+      vNode,
+    })
+    return res
+  } catch (error) {
+    throw error
+  } finally {
+    currentHookName = null
+  }
+}
 
-  return callback({
-    hook,
-    oldHook,
-    update: () => ctx.requestUpdate(vNode),
-    queueEffect: ctx.queueEffect.bind(ctx),
-    vNode,
-  })
+function error_hookMustBeCalledTopLevel(hookName: string): never {
+  throw new Error(
+    `[kaioken]: hook "${hookName}" must be used at the top level of a component or inside another composite hook.`
+  )
 }
 
 function cleanupHook(hook: { cleanup?: () => void }) {

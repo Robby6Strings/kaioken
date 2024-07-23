@@ -1,5 +1,6 @@
-import { node, nodeToCtxMap } from "./globals.js"
+import { node, renderMode } from "./globals.js"
 import type { AppContext } from "./appContext"
+import { warnDeprecated } from "./warning.js"
 
 export {
   isVNode,
@@ -11,6 +12,7 @@ export {
   shallowCompare,
   getNodeAppContext,
   getCurrentNode,
+  sideEffectsEnabled,
   encodeHtmlEntities,
   noop,
   propFilters,
@@ -23,8 +25,17 @@ type VNode = Kaioken.VNode
 
 const noop = Object.freeze(() => {})
 
-function getNodeAppContext(node: VNode): AppContext | undefined {
-  return nodeToCtxMap.get(node)
+let hasWarned_getNodeAppContext = false
+function getNodeAppContext(node: Kaioken.VNode): AppContext | undefined {
+  if (!hasWarned_getNodeAppContext) {
+    hasWarned_getNodeAppContext = true
+    warnDeprecated("getNodeAppContext", "", "Use the node.ctx field instead")
+  }
+  return node.ctx
+}
+
+function sideEffectsEnabled() {
+  return renderMode.current === "dom" || renderMode.current === "hydrate"
 }
 
 function getCurrentNode() {
@@ -56,12 +67,17 @@ function vNodeContains(
   return false
 }
 
-function applyRecursive(node: VNode, func: (node: VNode) => void) {
-  const nodes: VNode[] = [node]
-  const apply = (node: VNode) => {
+function applyRecursive(
+  node: Kaioken.VNode,
+  func: (node: Kaioken.VNode) => void,
+  includeSiblings = true
+) {
+  const nodes: Kaioken.VNode[] = [node]
+  const apply = (node: Kaioken.VNode) => {
     func(node)
     node.child && nodes.push(node.child)
-    node.sibling && nodes.push(node.sibling)
+    includeSiblings && node.sibling && nodes.push(node.sibling)
+    includeSiblings = true
   }
   while (nodes.length) apply(nodes.shift()!)
 }

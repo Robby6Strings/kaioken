@@ -1,21 +1,12 @@
 import type { AppContext } from "./appContext"
 import { Component } from "./component.js"
-import {
-  EffectTag,
-  elementFreezeSymbol,
-  elementTypes as et,
-} from "./constants.js"
-import { commitWork, createDom, updateDom } from "./dom.js"
-import {
-  childIndexStack,
-  ctx,
-  hydrationStack,
-  node,
-  renderMode,
-} from "./globals.js"
+import { EffectTag, elementTypes as et } from "./constants.js"
+import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
+import { ctx, node, renderMode } from "./globals.js"
+import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { vNodeContains } from "./utils.js"
+import { applyRecursive, vNodeContains } from "./utils.js"
 
 type VNode = Kaioken.VNode
 
@@ -25,22 +16,24 @@ export class Scheduler {
   private currentTreeIndex = 0
   private isRunning = false
   private queuedNodeEffectSets: Function[][] = []
-  private nextIdleEffects: Function[] = []
+  private nextIdleEffects: ((scheduler: this) => void)[] = []
   private deletions: VNode[] = []
   private frameDeadline = 0
   private pendingCallback: IdleRequestCallback | undefined
+  private channel: MessageChannel
+  private frameHandle: number | null = null
   nodeEffects: Function[] = []
 
   constructor(
     private appCtx: AppContext<any>,
-    private maxFrameMs = 50,
-    private channel = new MessageChannel()
+    private maxFrameMs = 50
   ) {
     const timeRemaining = () => this.frameDeadline - window.performance.now()
     const deadline = {
       didTimeout: false,
       timeRemaining,
     }
+    this.channel = new MessageChannel()
     this.channel.port2.onmessage = () => {
       if (typeof this.pendingCallback === "function") {
         this.pendingCallback(deadline)
@@ -48,22 +41,37 @@ export class Scheduler {
     }
   }
 
+  clear() {
+    this.nextUnitOfWork = undefined
+    this.treesInProgress = []
+    this.currentTreeIndex = 0
+    this.queuedNodeEffectSets = []
+    this.nextIdleEffects = []
+    this.deletions = []
+    this.frameDeadline = 0
+    this.pendingCallback = undefined
+  }
+
   wake() {
+    if (this.isRunning) return
     this.isRunning = true
-    this.workLoop()
+    this.requestIdleCallback(this.workLoop.bind(this))
   }
 
   sleep() {
+    if (!this.isRunning) return
     this.isRunning = false
+    if (this.frameHandle !== null) {
+      globalThis.cancelAnimationFrame(this.frameHandle)
+      this.frameHandle = null
+    }
   }
 
   queueUpdate(node: VNode) {
-    node.prev = { ...node, prev: undefined }
-
     if (this.nextUnitOfWork === undefined) {
       this.treesInProgress.push(node)
       this.nextUnitOfWork = node
-      return
+      return this.wake()
     } else if (this.nextUnitOfWork === node) {
       return
     }
@@ -105,6 +113,9 @@ export class Scheduler {
           this.currentTreeIndex--
           this.treesInProgress.splice(i, 1)
           this.treesInProgress.push(node)
+        } else {
+          // node contains a tree that has not yet been processed, 'usurp' the tree
+          this.treesInProgress.splice(i, 1, node)
         }
         return
       }
@@ -114,7 +125,13 @@ export class Scheduler {
   }
 
   queueDelete(node: VNode) {
-    node.effectTag = EffectTag.DELETION
+    applyRecursive(
+      node,
+      (n) => {
+        n.effectTag = EffectTag.DELETION
+      },
+      false
+    )
     if (node.props.ref) {
       node.props.ref.current = null
     }
@@ -126,7 +143,7 @@ export class Scheduler {
     this.nodeEffects = []
   }
 
-  nextIdle(fn: () => void) {
+  nextIdle(fn: (scheduler: this) => void) {
     this.nextIdleEffects.push(fn)
   }
 
@@ -148,12 +165,12 @@ export class Scheduler {
       (this.deletions.length || this.treesInProgress.length)
     ) {
       while (this.deletions.length) {
-        commitWork(this.appCtx, this.deletions.pop()!)
+        commitWork(this.deletions.pop()!)
       }
       if (this.treesInProgress.length) {
         this.currentTreeIndex = 0
         while (this.treesInProgress.length) {
-          commitWork(this.appCtx, this.treesInProgress.pop()!)
+          commitWork(this.treesInProgress.pop()!)
         }
 
         while (this.queuedNodeEffectSets.length) {
@@ -167,27 +184,26 @@ export class Scheduler {
     }
 
     if (!this.nextUnitOfWork) {
+      this.sleep()
       while (this.nextIdleEffects.length) {
-        this.nextIdleEffects.shift()!()
+        this.nextIdleEffects.shift()!(this)
       }
+      return
     }
 
-    if (!this.isRunning) return
-    this.requestIdleCallback(this.workLoop)
+    this.requestIdleCallback(this.workLoop.bind(this))
   }
 
   private requestIdleCallback(callback: IdleRequestCallback) {
-    globalThis.requestAnimationFrame((time) => {
+    this.frameHandle = globalThis.requestAnimationFrame((time) => {
       this.frameDeadline = time + this.maxFrameMs
       this.pendingCallback = callback
       this.channel.port1.postMessage(null)
     })
-    return this.appCtx.id
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {
-    const frozen =
-      elementFreezeSymbol in vNode && vNode[elementFreezeSymbol] === true
+    const frozen = "frozen" in vNode && vNode.frozen === true
     const skip = frozen && vNode.effectTag !== EffectTag.PLACEMENT
     if (!skip) {
       try {
@@ -196,29 +212,29 @@ export class Scheduler {
         } else if (vNode.type instanceof Function) {
           this.updateFunctionComponent(vNode)
         } else if (vNode.type === et.fragment) {
-          vNode.child = reconcileChildren(
-            this.appCtx,
-            vNode,
-            vNode.props.children
-          )
+          vNode.child =
+            reconcileChildren(
+              vNode,
+              vNode.child || null,
+              vNode.props.children || []
+            ) || undefined
         } else {
           this.updateHostComponent(vNode)
         }
       } catch (value) {
         const e = Component.emitThrow(vNode, value)
-        if (e) console.error("[kaioken]: unhandled error", e)
-      }
-      if (vNode.child) {
-        if (renderMode.current === "hydrate" && vNode.dom) {
-          hydrationStack.push(vNode.dom)
-          childIndexStack.push(0)
+        if (e) {
+          console.error(value)
+          window.__kaioken?.emit(
+            "error",
+            this.appCtx,
+            value instanceof Error ? value : new Error(String(value))
+          )
         }
-        return vNode.child
       }
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {
           hydrationStack.push(vNode.dom)
-          childIndexStack.push(0)
         }
         return vNode.child
       }
@@ -232,9 +248,8 @@ export class Scheduler {
       }
 
       nextNode = nextNode.parent
-      if (nextNode?.dom) {
+      if (renderMode.current === "hydrate" && nextNode?.dom) {
         hydrationStack.pop()
-        childIndexStack.pop()
       }
     }
   }
@@ -253,11 +268,10 @@ export class Scheduler {
       vNode.instance.props = vNode.props
     }
 
-    vNode.child = reconcileChildren(
-      this.appCtx,
-      vNode,
-      [vNode.instance.render()].flat() as VNode[]
-    )
+    vNode.child =
+      reconcileChildren(vNode, vNode.child || null, [
+        vNode.instance.render(),
+      ] as VNode[]) || undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -265,61 +279,34 @@ export class Scheduler {
   private updateFunctionComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
-    vNode.child = reconcileChildren(
-      this.appCtx,
-      vNode,
-      [(vNode.type as Function)(vNode.props)].flat()
-    )
+    vNode.child =
+      reconcileChildren(vNode, vNode.child || null, [
+        (vNode.type as Function)(vNode.props),
+      ]) || undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
 
   private updateHostComponent(vNode: VNode) {
     assertValidElementProps(vNode)
+    node.current = vNode
     if (!vNode.dom) {
       if (renderMode.current === "hydrate") {
-        const dom = currentDom()!
-        if ((vNode.type as string) !== dom.nodeName.toLowerCase()) {
-          throw new Error(
-            `[kaioken]: Expected node of type ${vNode.type} but received ${dom.nodeName}`
-          )
-        }
-        vNode.dom = dom
-        if (vNode.type === et.text) {
-          handleTextNodeSplitting(vNode)
-        } else {
-          updateDom(vNode, vNode.dom)
-        }
+        hydrateDom(vNode)
       } else {
         vNode.dom = createDom(vNode)
+        updateDom(vNode)
       }
     }
     if (vNode.props.ref) {
       vNode.props.ref.current = vNode.dom
     }
-    vNode.child = reconcileChildren(this.appCtx, vNode, vNode.props.children)
+    vNode.child =
+      reconcileChildren(
+        vNode,
+        vNode.child || null,
+        vNode.props.children || []
+      ) || undefined
+    node.current = undefined
   }
-}
-function handleTextNodeSplitting(vNode: VNode) {
-  if (vNode.sibling?.type === et.text) {
-    let prev = vNode
-    let sibling: VNode | undefined = vNode.sibling
-    while (sibling) {
-      if (sibling.type !== et.text) break
-      sibling.dom = (prev.dom as Text)!.splitText(prev.props.nodeValue.length)
-      prev = sibling
-      sibling = sibling.sibling
-    }
-  }
-}
-
-const currentDom = () => {
-  let n = hydrationStack[hydrationStack.length - 1].childNodes[
-    childIndexStack[childIndexStack.length - 1]++
-  ] as HTMLElement | SVGElement | Text | Comment
-
-  while (n instanceof Comment)
-    n = n.nextSibling as HTMLElement | SVGElement | Text | Comment
-
-  return n
 }

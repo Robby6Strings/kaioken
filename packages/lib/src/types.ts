@@ -1,14 +1,16 @@
 import type { Signal as SignalClass } from "./signal"
-import type { Component } from "./component"
+import type { Component, ComponentConstructor } from "./component"
 import type { EffectTag } from "./constants"
 import type { KaiokenGlobalContext } from "./globalContext"
 import type {
   EventAttributes,
   GlobalAttributes,
   HtmlElementAttributes,
+  SomeDom,
   SvgElementAttributes,
   SvgGlobalAttributes,
 } from "./types.dom"
+import type { AppContext } from "./appContext"
 
 export type { ElementProps }
 
@@ -64,10 +66,10 @@ declare global {
       | Kaioken.Signal<any>
 
     type ElementAttributes = {
-      ref?: Kaioken.Ref<BaseElement>
+      ref?: Kaioken.Ref<BaseElement | null>
       key?: JSX.ElementKey
       children?: JSX.Children
-      innerHTML?: string | number | Kaioken.Signal<any>
+      innerHTML?: string | number | Kaioken.Signal<string | number>
     }
   }
   export namespace Kaioken {
@@ -77,7 +79,7 @@ declare global {
     }
     type Context<T> = {
       Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
-      default: () => T | null
+      default: () => T
     }
 
     type FC<T = {}> = (props: FCProps<T>) => JSX.Element
@@ -89,22 +91,23 @@ declare global {
       name?: string
     }
 
-    type Ref<T> = { current: T | null }
+    type Ref<T> = { current: T }
 
     type StateSetter<T> = T | ((prev: T) => T)
 
     type Signal<T> = SignalClass<T>
 
     type VNode = {
-      type: string | Function | typeof Component
-      dom?: HTMLElement | SVGElement | Text
+      type: string | Function | ComponentConstructor
+      dom?: SomeDom
       instance?: Component
       props: {
         [key: string]: any
-        children: VNode[]
+        children?: unknown[]
         key?: JSX.ElementKey
         ref?: Kaioken.Ref<unknown>
       }
+      ctx: AppContext
       index: number
       hooks?: Hook<unknown>[]
       subs?: Signal<any>[]
@@ -113,6 +116,7 @@ declare global {
       sibling?: VNode
       prev?: VNode
       effectTag?: (typeof EffectTag)[keyof typeof EffectTag]
+      frozen?: boolean
     }
   }
 }

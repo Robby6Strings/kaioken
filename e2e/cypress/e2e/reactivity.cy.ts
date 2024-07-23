@@ -1,7 +1,7 @@
 describe("basic reactivity & state", () => {
   beforeEach(() => {
     const port = Cypress.env("port")
-    cy.visit(`http://localhost:${port}`)
+    cy.visit(`http://localhost:${port}/counter`)
   })
 
   it("updates text in the dom that was derived from state when the state changes", () => {
@@ -14,12 +14,18 @@ describe("basic reactivity & state", () => {
     cy.get("main #counter button").click().click()
     cy.get("main #counter p").should("exist")
   })
+
+  it("correctly persists component state when order of children changes", () => {
+    cy.get("main #counter button").click().click()
+    cy.get("main #toggle-btn").click()
+    cy.get("main #counter span").should("have.text", "2")
+  })
 })
 
 describe("hooks & data", () => {
   beforeEach(() => {
     const port = Cypress.env("port")
-    cy.visit(`http://localhost:${port}`)
+    cy.visit(`http://localhost:${port}/todos`)
   })
 
   it("can render a dynamic state-driven list", () => {

@@ -12,7 +12,6 @@ export function DrawerDemo() {
       <Portal container={document.getElementById("portal-root")!}>
         <Transition
           in={open}
-          timings={[40, 150, 150, 150]}
           element={(state) => (
             <Drawer state={state} close={() => setOpen(false)} />
           )}
@@ -28,7 +27,7 @@ type DrawerProps = {
 }
 
 function Drawer({ state, close }: DrawerProps) {
-  const wrapperRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
   if (state == "exited") return null
   const opacity = state === "entered" ? "1" : "0"
   const offsetY = state === "entered" ? 0 : 15

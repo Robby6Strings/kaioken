@@ -3,11 +3,18 @@ import { Component } from "./component.js"
 export type TransitionState = "entering" | "entered" | "exiting" | "exited"
 type TransitionProps = {
   in: boolean
-  timings?: [number, number, number, number]
+  duration?:
+    | number
+    | {
+        in: number
+        out: number
+      }
   element: (state: "entering" | "entered" | "exiting" | "exited") => JSX.Element
+  onTransitionEnd?: (state: "entered" | "exited") => void
 }
 
 export class Transition extends Component<TransitionProps> {
+  defaultDuration = 150
   state = {
     transitionState: "exited" as TransitionState,
     timeoutRef: null as number | null,
@@ -28,45 +35,61 @@ export class Transition extends Component<TransitionProps> {
 
   componentDidMount(): void {
     if (this.props.in) {
-      this.setTransitionState("entering")
-      this.queueStateChange("entered")
+      this.vNode.ctx.scheduler?.nextIdle(() => {
+        this.setTransitionState("entering")
+        this.queueStateChange("entered")
+      })
     }
   }
   componentDidUpdate(): void {
-    if (this.props.in && this.state.transitionState === "exited") {
+    if (
+      this.props.in &&
+      this.state.transitionState !== "entered" &&
+      this.state.transitionState !== "entering"
+    ) {
       this.setTransitionState("entering")
       this.queueStateChange("entered")
-    } else if (!this.props.in && this.state.transitionState === "entered") {
+    } else if (
+      !this.props.in &&
+      this.state.transitionState !== "exited" &&
+      this.state.transitionState !== "exiting"
+    ) {
       this.setTransitionState("exiting")
       this.queueStateChange("exited")
     }
   }
 
   setTransitionState(transitionState: TransitionState): void {
+    this.clearTimeout()
     this.setState((prev) => ({
       ...prev,
       transitionState,
     }))
-  }
 
-  getTiming(): number {
-    const timings = this.props.timings ?? [0, 0, 0, 0]
-    switch (this.state.transitionState) {
-      case "entering":
-        return timings[0]
-      case "entered":
-        return timings[1]
-      case "exiting":
-        return timings[2]
-      case "exited":
-        return timings[3]
+    if (
+      (transitionState === "exited" || transitionState === "entered") &&
+      this.props.onTransitionEnd
+    ) {
+      this.vNode.ctx.scheduler?.nextIdle(() =>
+        this.props.onTransitionEnd!(transitionState)
+      )
     }
   }
 
-  queueStateChange(transitionState: TransitionState): void {
-    this.state.timeoutRef = window.setTimeout(() => {
-      this.clearTimeout()
-      this.setTransitionState(transitionState)
-    }, this.getTiming())
+  queueStateChange(transitionState: "entered" | "exited"): void {
+    this.state.timeoutRef = window.setTimeout(
+      () => this.setTransitionState(transitionState),
+      this.getTiming(transitionState)
+    )
+  }
+
+  getTiming(transitionState: "entered" | "exited"): number {
+    if (typeof this.props.duration === "number") return this.props.duration
+    switch (transitionState) {
+      case "entered":
+        return this.props.duration?.in ?? this.defaultDuration
+      case "exited":
+        return this.props.duration?.out ?? this.defaultDuration
+    }
   }
 }

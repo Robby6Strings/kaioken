@@ -8,7 +8,7 @@ export function PageShell({
   children,
 }: {
   pageContext: PageContext
-  children?: JSX.Children
+  children: JSX.Children
 }) {
   const PageLayout = pageContext.config.Layout
   return (

@@ -1,64 +1,67 @@
-import { nodeToCtxMap } from "./globals.js"
-import { cleanupHook, shouldExecHook, useHook } from "./hooks/utils.js"
+import { sideEffectsEnabled, useHook } from "./hooks/utils.js"
 import { shallowCompare } from "./utils.js"
 
 export { createStore }
 export type { Store, MethodFactory }
 
+type Prettify<T> = {
+  [K in keyof T]: T[K]
+} & {}
+
 type MethodFactory<T> = (
   setState: (setter: Kaioken.StateSetter<T>) => void,
   getState: () => T
-) => Record<string, (...args: any[]) => void>
+) => Record<string, Function>
 
-type StoreHook<T, U extends MethodFactory<T>> = {
-  <R>(sliceFn: (state: T) => R): { value: R } & ReturnType<U>
+type StoreHook<T, U extends Record<string, Function>> = {
+  <R>(sliceFn: (state: T) => R): Prettify<{ value: R } & U>
   <
     F extends null | ((state: T) => unknown),
     R extends F extends Function ? ReturnType<F> : T,
   >(
     sliceFn: F,
     equality: (prev: R, next: R, compare: typeof shallowCompare) => boolean
-  ): { value: R } & ReturnType<U>
-  (): { value: T } & ReturnType<U>
+  ): Prettify<{ value: R } & U>
+  (): Prettify<{ value: T } & U>
 }
 
-type Store<T, U extends MethodFactory<T>> = StoreHook<T, U> & {
+type Store<T, U extends Record<string, Function>> = StoreHook<T, U> & {
   getState: () => T
   setState: (setter: Kaioken.StateSetter<T>) => void
-  methods: ReturnType<U>
+  methods: U
   subscribe: (fn: (value: T) => void) => () => void
+}
+
+type NodeSliceCompute = {
+  sliceFn: Function | null
+  eq:
+    | ((prev: any, next: any, compare: typeof shallowCompare) => boolean)
+    | undefined
+  slice: any
 }
 
 function createStore<T, U extends MethodFactory<T>>(
   initial: T,
   methodFactory: U
-): Store<T, U> {
-  let value = initial
+): Store<T, ReturnType<U>> {
+  let state = initial
+  let stateIteration = 0
   const subscribers = new Set<Kaioken.VNode | Function>()
-  const nodeToSliceComputeMap = new WeakMap<
-    Kaioken.VNode,
-    [
-      Function | null,
-      (
-        | ((prev: any, next: any, compare: typeof shallowCompare) => boolean)
-        | undefined
-      ),
-      unknown,
-    ][]
-  >()
+  const nodeToSliceComputeMap = new WeakMap<Kaioken.VNode, NodeSliceCompute[]>()
 
-  const getState = () => value
+  const getState = () => state
   const setState = (setter: Kaioken.StateSetter<T>) => {
-    value = setter instanceof Function ? setter(value) : setter
+    state = setter instanceof Function ? setter(state) : setter
     subscribers.forEach((n) => {
-      if (n instanceof Function) return n(value)
+      if (n instanceof Function) return n(state)
       const computes = nodeToSliceComputeMap.get(n)
       if (computes) {
         let computeChanged = false
         for (let i = 0; i < computes.length; i++) {
-          const [sliceFn, eq, slice] = computes[i]
-          const computeRes = sliceFn === null ? value : sliceFn(value)
-          computes[i] = [sliceFn, eq, computeRes]
+          if (!computes[i]) continue
+          const { sliceFn, eq, slice } = computes[i]
+          const computeRes = sliceFn === null ? state : sliceFn(state)
+          computes[i] = { sliceFn, eq, slice: computeRes }
 
           if (computeChanged) continue
           if (eq && eq(slice, computeRes, shallowCompare)) {
@@ -71,41 +74,56 @@ function createStore<T, U extends MethodFactory<T>>(
         }
         if (!computeChanged) return
       }
-      nodeToCtxMap.get(n)!.requestUpdate(n)
+      n.ctx.requestUpdate(n)
     })
+    stateIteration++
   }
   const methods = methodFactory(setState, getState) as ReturnType<U>
 
   function useStore<R>(
-    sliceFn?: null | ((state: T) => R),
+    sliceFn: null | ((state: T) => R) = null,
     equality?: (prev: R, next: R, compare: typeof shallowCompare) => boolean
   ) {
-    if (!shouldExecHook()) {
-      if (sliceFn) {
-        return { value: sliceFn(value), ...methods }
-      }
-      return { value, ...methods }
+    if (!sideEffectsEnabled()) {
+      return { value: sliceFn ? sliceFn(state) : state, ...methods }
     }
 
-    return useHook("useStore", {}, ({ hook, oldHook, vNode }) => {
-      if (oldHook) {
-        cleanupHook(oldHook)
-      }
-      const stateSlice = sliceFn ? sliceFn(value) : value
-      if (sliceFn || equality) {
-        const computes = nodeToSliceComputeMap.get(vNode) ?? []
-        computes.push([sliceFn ?? null, equality, stateSlice])
-        nodeToSliceComputeMap.set(vNode, computes)
-      }
+    return useHook(
+      "useStore",
+      { stateSlice: null as any as T | R, lastChangeSync: -1 },
+      ({ hook, oldHook, vNode }) => {
+        if (!oldHook) {
+          subscribers.add(vNode)
+          hook.stateSlice = sliceFn ? sliceFn(state) : state
+          if (sliceFn || equality) {
+            const computes = nodeToSliceComputeMap.get(vNode) ?? []
+            computes[vNode.ctx.hookIndex - 1] = {
+              sliceFn,
+              eq: equality,
+              slice: hook.stateSlice,
+            }
+            nodeToSliceComputeMap.set(vNode, computes)
+          }
+          hook.cleanup = () => {
+            nodeToSliceComputeMap.delete(vNode)
+            subscribers.delete(vNode)
+          }
+          hook.debug = () => {
+            return { value: hook.stateSlice }
+          }
+        }
 
-      subscribers.add(vNode)
-      hook.cleanup = () => {
-        nodeToSliceComputeMap.delete(vNode)
-        subscribers.delete(vNode)
-      }
+        if (hook.lastChangeSync !== stateIteration) {
+          hook.lastChangeSync = stateIteration
+          const compute = (nodeToSliceComputeMap.get(vNode) ?? [])?.[
+            vNode.ctx.hookIndex - 1
+          ]
+          hook.stateSlice = compute ? compute.slice : state
+        }
 
-      return { value: stateSlice, ...methods }
-    })
+        return { value: hook.stateSlice, ...methods }
+      }
+    )
   }
 
   return Object.assign(useStore, {

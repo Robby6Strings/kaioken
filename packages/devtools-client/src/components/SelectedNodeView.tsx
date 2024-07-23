@@ -1,25 +1,29 @@
 import { AppContext, useEffect } from "kaioken"
-import { getCurrentNode, getNodeAppContext } from "kaioken/utils"
 import { useDevtoolsStore, kaiokenGlobal } from "../store"
 import { getNodeName } from "../utils"
 import { NodeDataSection } from "./NodeDataSection"
+import { useRequestUpdate } from "../hooks/useRequestUpdate"
 
 export function SelectedNodeView() {
   const {
     value: { selectedApp, selectedNode },
+    setSelectedNode,
   } = useDevtoolsStore(({ selectedApp, selectedNode }) => ({
     selectedApp,
     selectedNode,
   }))
-  const node = getCurrentNode()
-  const ctx = getNodeAppContext(node!)
-
-  function handleUpdate(appCtx: AppContext) {
-    if (appCtx !== selectedApp || !node) return
-    ctx?.requestUpdate(node)
-  }
+  const requestUpdate = useRequestUpdate()
 
   useEffect(() => {
+    const handleUpdate = (appCtx: AppContext) => {
+      if (appCtx !== selectedApp) return
+      if (selectedNode?.effectTag === 3) {
+        setSelectedNode(null)
+      } else {
+        requestUpdate()
+      }
+    }
+
     kaiokenGlobal?.on("update", handleUpdate)
     return () => kaiokenGlobal?.off("update", handleUpdate)
   }, [])

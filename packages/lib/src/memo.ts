@@ -1,26 +1,28 @@
-import { elementFreezeSymbol } from "./constants.js"
-import { createElement } from "./index.js"
+import { createElement } from "./element.js"
 
-type Rec = Record<string, unknown>
-
-function _arePropsEqual(prevProps: Rec, nextProps: Rec) {
-  return JSON.stringify(prevProps) === JSON.stringify(nextProps)
+function _arePropsEqual<T extends Record<string, unknown>>(
+  prevProps: T,
+  nextProps: T
+) {
+  return Object.keys(prevProps).every(
+    ([key]) => prevProps[key] === nextProps[key]
+  )
 }
 
 export function memo<Props extends Record<string, unknown>>(
   fn: (props: Props) => JSX.Element,
   arePropsEqual: (
-    prevProps: Record<string, unknown>,
-    nextProps: Record<string, unknown>
+    prevProps: Props,
+    nextProps: Props
   ) => boolean = _arePropsEqual
 ): (props: Props) => JSX.Element {
   let node: Kaioken.VNode
-  let oldProps = {}
-
+  let oldProps = {} as Props
   return Object.assign(
     (props: Props) => {
       if (node && arePropsEqual(oldProps, props)) {
-        return Object.assign(node, { [elementFreezeSymbol]: true })
+        node.frozen = true
+        return node
       }
       oldProps = props
       if (!node) {
@@ -28,7 +30,8 @@ export function memo<Props extends Record<string, unknown>>(
       } else {
         Object.assign(node.props, props)
       }
-      return Object.assign(node, { [elementFreezeSymbol]: false })
+      node.frozen = false
+      return node
     },
     { displayName: "Kaioken.memo" }
   )
