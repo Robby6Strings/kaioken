@@ -1,6 +1,7 @@
 import { useAsync, useState } from "kaioken"
 import { Spinner } from "./atoms/Spinner"
 import { Button } from "./atoms/Button"
+import { ProductCard } from "./ProductCard"
 
 interface Product {
   id: number
