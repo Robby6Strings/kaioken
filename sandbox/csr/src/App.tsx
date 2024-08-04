@@ -12,94 +12,7 @@ import { Transitions } from "./components/Transitions"
 import { KeyedList } from "./components/KeyedList"
 import { ContextExample } from "./components/ContextExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
-
-// const { data, loading, error, invalidate } = useAsync(async () => {
-//   return (await fetch(`https://dummyjson.com/products/${productId}`)).json()
-// }, [productId])
-
-// type Resolved<T> = T extends Promise<infer U> ? U : T
-// type CacheKeys = [string, ...any[]]
-
-// type UseCacheResult<T> =
-//   | {
-//       data: T
-//       loading: false
-//       error: null
-//     }
-//   | { data: null; loading: true; error: null }
-//   | { data: null; loading: false; error: Error }
-
-// function useCache<T>(
-//   key: CacheKeys,
-//   resource: (() => T) | (() => Promise<T>)
-// ): UseCacheResult<Resolved<T>> {
-//   return {} as any as UseCacheResult<Resolved<T>>
-// }
-
-// type CacheInvalidationConfig = {
-//   keys?: CacheKeys
-//   predicate?: (data: any) => boolean
-// }
-// class CacheContext {
-//   invalidate = (cfg?: CacheInvalidationConfig) => 123
-// }
-
-// const CacheCtx = createContext<CacheContext | null>(null)
-// function CacheProvider(props: {
-//   context: CacheContext
-//   children?: JSX.Children
-// }) {
-//   return (
-//     <CacheCtx.Provider value={props.context}>
-//       {props.children}
-//     </CacheCtx.Provider>
-//   )
-// }
-
-// const loadProduct = async ({ id }: { id: number }): Promise<Product> =>
-//   (await fetch(`https://dummyjson.com/products/${id}`)).json()
-
-// const myCacheCtx = new CacheContext()
-// const _App = () => {
-//   return (
-//     <CacheProvider context={myCacheCtx}>
-//       <ProductView id={1} />
-//     </CacheProvider>
-//   )
-// }
-// function ProductView({ id }: { id: number }) {
-//   const { data, loading, error } = useCache(["product", { id }], loadProduct)
-//   myCacheCtx.invalidate({ keys: ["product", { id }] })
-
-//   const [formData, setFormData] = useState<Product | null>(data)
-
-//   const handleSubmit = async () => {}
-
-//   return data ? (
-//     <form className="flex flex-col gap-2" onsubmit={handleSubmit}>
-//       <div className="form-control">
-//         <label className="label">Product</label>
-//         <input
-//           type="text"
-//           className="input"
-//           value={formData?.title}
-//           onchange={(e) =>
-//             setFormData({ ...(formData as Product), title: e.target.value })
-//           }
-//         />
-//       </div>
-//     </form>
-//   ) : loading ? (
-//     <p>Loading...</p>
-//   ) : (
-//     <p>{error.message}</p>
-//   )
-// }
-
-// type Product = {
-//   id: number
-//   title: string
-// }
+import { SuspenseExample } from "./components/SuspenseExample"
 
 function Nav() {
   return (
@@ -165,6 +78,7 @@ export function App() {
           <Route path="/keyed-list" element={<KeyedList />} />
           <Route path="/context" element={<ContextExample />} />
           <Route path="/useAsync" element={<UseAsyncExample />} />
+          <Route path="/suspense" element={<SuspenseExample />} />
           <Route path="*" element={<h1>Uh-oh! Page not found :C</h1>} />
         </Router>
       </main>

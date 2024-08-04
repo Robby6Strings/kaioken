@@ -1,5 +1,6 @@
 import { componentSymbol } from "./constants.js"
 import { node } from "./globals.js"
+import { isVNode } from "./utils.js"
 
 export { Component }
 
@@ -19,16 +20,13 @@ abstract class Component<T = Record<string, unknown>> {
   }
   abstract render(): JSX.Element
 
-  setState(setter: (state: this["state"]) => this["state"]) {
-    const newState = setter({ ...this.state })
-    if (this.shouldComponentUpdate(this.props, newState, this.state)) {
-      queueMicrotask(() => this.vNode.ctx.requestUpdate(this.vNode))
-    }
-    this.state = newState
-  }
-
   static isCtor(type: unknown): type is ComponentConstructor {
     return typeof type === "function" && componentSymbol in type
+  }
+  static isCtorNode(
+    type: unknown
+  ): type is Kaioken.VNode & { type: ComponentConstructor } {
+    return isVNode(type) && Component.isCtor(type?.type)
   }
 
   static emitThrow(node: Kaioken.VNode, value: unknown) {
@@ -44,20 +42,28 @@ abstract class Component<T = Record<string, unknown>> {
     return value
   }
 
-  handleThrow?(value: unknown): boolean
-  componentDidMount?(): void
-  componentDidUpdate?(): void
-  componentWillUnmount?(): void
-  shouldComponentUpdate(
-    nextProps: T,
-    nextState: this["state"],
-    prevState: this["state"]
-  ): boolean
-  shouldComponentUpdate(
-    _: T,
-    nextState: this["state"],
-    prevState: this["state"]
-  ): boolean {
-    return prevState !== nextState
+  setState(setter: (state: this["state"]) => this["state"]) {
+    this.state = setter({ ...this.state })
+    this.vNode.ctx.requestUpdate(this.vNode)
+    //setInterval(() => this.vNode.ctx.requestUpdate(this.vNode))
   }
+
+  /**
+   * Allows observation of errors or values thrown by children.
+   *
+   * Return `true` to indicate that the throw was handled, preventing it from bubbling further.
+   */
+  handleThrow?(value: unknown): boolean
+  /**
+   * Called immediately after the component mounts.
+   */
+  componentDidMount?(): void
+  /**
+   * Called immediately after the component updates.
+   */
+  componentDidUpdate?(): void
+  /**
+   * Called immediately before the component unmounts.
+   */
+  componentWillUnmount?(): void
 }
