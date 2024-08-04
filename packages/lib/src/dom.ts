@@ -230,7 +230,7 @@ function placeDom(
       const n = stack.pop()!
       const isPortal = Portal.isPortal(n.type)
       if (n.dom === dom) break // once we meet the dom we're placing, stop
-      if (!isPortal && n.dom) prevDom = n.dom
+      if (!isPortal && n.dom?.isConnected) prevDom = n.dom
       if (n.sibling) stack.push(n.sibling)
       if (!isPortal && !n.dom && n.child) stack.push(n.child)
     }
