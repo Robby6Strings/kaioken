@@ -9,8 +9,8 @@ export type ComponentConstructor = new <T = Record<string, unknown>>(
 ) => Component<T>
 
 abstract class Component<T = Record<string, unknown>> {
-  doNotModifyDom = false
   static [componentSymbol] = true
+  doNotModifyDom = false
   state = {} as Record<string, unknown>
   props: T
   vNode: Kaioken.VNode
@@ -44,8 +44,9 @@ abstract class Component<T = Record<string, unknown>> {
 
   setState(setter: (state: this["state"]) => this["state"]) {
     this.state = setter({ ...this.state })
-    this.vNode.ctx.requestUpdate(this.vNode)
-    //setInterval(() => this.vNode.ctx.requestUpdate(this.vNode))
+    if (this.shouldComponentUpdate(this.props, this.state)) {
+      queueMicrotask(() => this.vNode.ctx.requestUpdate(this.vNode))
+    }
   }
 
   /**
@@ -66,4 +67,11 @@ abstract class Component<T = Record<string, unknown>> {
    * Called immediately before the component unmounts.
    */
   componentWillUnmount?(): void
+  /**
+   * Called when the component may possibly re-render. Return `false` to prevent re-render.
+   */
+  shouldComponentUpdate(props: T, state: this["state"]): boolean
+  shouldComponentUpdate(): boolean {
+    return true
+  }
 }
