@@ -78,11 +78,18 @@ declare global {
       children?: JSX.Children
     }
     type Context<T> = {
-      Provider: ({ value, children }: ProviderProps<T>) => JSX.Element
+      Provider: (({ value, children }: ProviderProps<T>) => JSX.Element) & {
+        displayName?: string
+      }
       default: () => T
+      /** Used to display the name of the context in devtools  */
+      displayName?: string
     }
 
-    type FC<T = {}> = (props: FCProps<T>) => JSX.Element
+    type FC<T = {}> = ((props: FCProps<T>) => JSX.Element) & {
+      /** Used to display the name of the component in devtools  */
+      displayName?: string
+    }
     type FCProps<T = {}> = T & { children?: JSX.Children }
 
     type Hook<T> = T & {
@@ -103,7 +110,7 @@ declare global {
       instance?: Component
       props: {
         [key: string]: any
-        children?: unknown[]
+        children?: unknown
         key?: JSX.ElementKey
         ref?: Kaioken.Ref<unknown>
       }

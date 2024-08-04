@@ -1,4 +1,4 @@
-import { ctx, node, contexts, renderMode } from "./globals.js"
+import { ctx, node, renderMode } from "./globals.js"
 import { AppContext } from "./appContext.js"
 import { createElement } from "./element.js"
 import {
@@ -20,11 +20,12 @@ export function renderToString<T extends Record<string, unknown>>(
 ) {
   const prev = renderMode.current
   renderMode.current = "string"
+  const prevCtx = ctx.current
   const c = (ctx.current = new AppContext(el, elProps))
   c.rootNode = el instanceof Function ? createElement(el, elProps) : el
   const res = renderToString_internal(c.rootNode, undefined, elProps)
-  contexts.splice(contexts.indexOf(c), 1)
   renderMode.current = prev
+  ctx.current = prevCtx
   return res
 }
 
@@ -48,12 +49,14 @@ function renderToString_internal<T extends Record<string, unknown>>(
 
   el.parent = parent
   const props = el.props ?? {}
-  const children = props.children ?? []
+  const children = props.children
   const type = el.type
   if (type === elementTypes.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
-  if (type === elementTypes.fragment)
+  if (type === elementTypes.fragment) {
+    if (!Array.isArray(children)) return renderToString_internal(children, el)
     return children.map((c) => renderToString_internal(c, el, props)).join("")
+  }
 
   if (typeof type !== "string") {
     node.current = el
@@ -78,7 +81,9 @@ function renderToString_internal<T extends Record<string, unknown>>(
       ? Signal.isSignal(props.innerHTML)
         ? props.innerHTML.value
         : props.innerHTML
-      : children.map((c) => renderToString_internal(c, el)).join("")
+      : Array.isArray(children)
+        ? children.map((c) => renderToString_internal(c, el)).join("")
+        : renderToString_internal(children, el)
 
   return `<${type}${attrs.length ? " " + attrs : ""}${isSelfClosing ? "/>" : `>${inner}</${type}>`}`
 }

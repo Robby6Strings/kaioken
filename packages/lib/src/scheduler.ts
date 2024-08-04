@@ -1,5 +1,5 @@
 import type { AppContext } from "./appContext"
-import { Component } from "./component.js"
+import { Component, ComponentConstructor } from "./component.js"
 import { EffectTag, elementTypes as et } from "./constants.js"
 import { commitWork, createDom, hydrateDom, updateDom } from "./dom.js"
 import { ctx, node, renderMode } from "./globals.js"
@@ -216,7 +216,7 @@ export class Scheduler {
             reconcileChildren(
               vNode,
               vNode.child || null,
-              vNode.props.children || []
+              vNode.props.children
             ) || undefined
         } else {
           this.updateHostComponent(vNode)
@@ -257,21 +257,17 @@ export class Scheduler {
   private updateClassComponent(vNode: VNode) {
     this.appCtx.hookIndex = 0
     node.current = vNode
+    const type = vNode.type as ComponentConstructor
     if (!vNode.instance) {
-      const instance =
-        vNode.prev?.instance ??
-        new (vNode.type as { new (props: Record<string, unknown>): Component })(
-          vNode.props
-        )
+      const instance = vNode.prev?.instance ?? new type(vNode.props)
       vNode.instance = instance
     } else {
       vNode.instance.props = vNode.props
     }
 
     vNode.child =
-      reconcileChildren(vNode, vNode.child || null, [
-        vNode.instance.render(),
-      ] as VNode[]) || undefined
+      reconcileChildren(vNode, vNode.child || null, vNode.instance.render()) ||
+      undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -280,9 +276,11 @@ export class Scheduler {
     this.appCtx.hookIndex = 0
     node.current = vNode
     vNode.child =
-      reconcileChildren(vNode, vNode.child || null, [
-        (vNode.type as Function)(vNode.props),
-      ]) || undefined
+      reconcileChildren(
+        vNode,
+        vNode.child || null,
+        (vNode.type as Function)(vNode.props)
+      ) || undefined
     this.queueCurrentNodeEffects()
     node.current = undefined
   }
@@ -302,11 +300,8 @@ export class Scheduler {
       vNode.props.ref.current = vNode.dom
     }
     vNode.child =
-      reconcileChildren(
-        vNode,
-        vNode.child || null,
-        vNode.props.children || []
-      ) || undefined
+      reconcileChildren(vNode, vNode.child || null, vNode.props.children) ||
+      undefined
     node.current = undefined
   }
 }

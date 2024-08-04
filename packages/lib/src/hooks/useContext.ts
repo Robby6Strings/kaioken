@@ -32,6 +32,7 @@ const useContextCallback = <T>({
 }: HookCallbackState<UseContextHook<T>>) => {
   if (!oldHook) {
     hook.debug = () => ({
+      contextName: hook.context.Provider.displayName || "",
       value: hook.ctxNode
         ? hook.ctxNode.props[contextDataSymbol].value
         : hook.context.default(),

@@ -1,7 +1,7 @@
 import { Readable } from "node:stream"
 import { Component, createElement } from "../index.js"
 import { AppContext } from "../appContext.js"
-import { renderMode, ctx, node, contexts } from "../globals.js"
+import { renderMode, ctx, node } from "../globals.js"
 
 import {
   encodeHtmlEntities,
@@ -28,18 +28,18 @@ function renderToStream<T extends Record<string, unknown>>(
 ): Readable {
   const prev = renderMode.current
   renderMode.current = "stream"
-
   const state: RequestState = {
     stream: new Readable(),
     ctx: new AppContext<any>(el, elProps),
   }
+  const prevCtx = ctx.current
   ctx.current = state.ctx
   state.ctx.rootNode = el instanceof Function ? createElement(el, elProps) : el
   renderToStream_internal(state, state.ctx.rootNode, undefined, elProps)
 
   state.stream.push(null)
-  contexts.splice(contexts.indexOf(state.ctx), 1)
   renderMode.current = prev
+  ctx.current = prevCtx
 
   return state.stream
 }
@@ -80,13 +80,15 @@ function renderToStream_internal(
 
   el.parent = parent
   const props = el.props ?? {}
-  const children = props.children ?? []
+  const children = props.children
   const type = el.type
   if (type === et.text) {
     state.stream.push(encodeHtmlEntities(props.nodeValue ?? ""))
     return
   }
   if (type === et.fragment) {
+    if (!Array.isArray(children))
+      return renderToStream_internal(state, children, el)
     return children.forEach((c) => renderToStream_internal(state, c, el))
   }
 
@@ -122,7 +124,11 @@ function renderToStream_internal(
         )
       )
     } else {
-      children.forEach((c) => renderToStream_internal(state, c, el))
+      if (Array.isArray(children)) {
+        children.forEach((c) => renderToStream_internal(state, c, el))
+      } else {
+        renderToStream_internal(state, children, el)
+      }
     }
 
     state.stream.push(`</${type}>`)

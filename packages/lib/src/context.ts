@@ -2,10 +2,10 @@ import { contextDataSymbol } from "./constants.js"
 import { fragment } from "./element.js"
 
 export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
-  const ctx = {
-    Provider: ({ value, children = [] }: Kaioken.ProviderProps<T>) => {
+  const ctx: Kaioken.Context<T> = {
+    Provider: ({ value, children }: Kaioken.ProviderProps<T>) => {
       return fragment({
-        children: children as JSX.Element[],
+        children,
         [contextDataSymbol]: {
           value,
           ctx,
@@ -13,6 +13,12 @@ export function createContext<T>(defaultValue: T): Kaioken.Context<T> {
       })
     },
     default: () => defaultValue,
+    set displayName(name: string) {
+      this.Provider.displayName = name
+    },
+    get displayName() {
+      return this.Provider.displayName || "Anonymous Context"
+    },
   }
   return ctx
 }

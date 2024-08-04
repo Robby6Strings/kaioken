@@ -12,6 +12,7 @@ import { renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { MaybeDom, SomeDom, SomeElement } from "./types.dom.js"
 import { Portal } from "./portal.js"
+import { __DEV__ } from "./env.js"
 
 export { commitWork, createDom, updateDom, hydrateDom }
 
@@ -66,7 +67,8 @@ function updateDom(node: VNode) {
 
 function hydrateDom(vNode: VNode) {
   const dom = hydrationStack.nextChild()
-  const nodeName = dom?.nodeName.toLowerCase()
+  if (!dom) throw new Error(`[kaioken]: Hydration mismatch - no node found`)
+  const nodeName = dom.nodeName.toLowerCase()
   if ((vNode.type as string) !== nodeName) {
     throw new Error(
       `[kaioken]: Hydration mismatch - expected node of type ${vNode.type} but received ${nodeName}`
@@ -80,7 +82,8 @@ function hydrateDom(vNode: VNode) {
   let prev = vNode
   let sibling = vNode.sibling
   while (sibling && sibling.type === elementTypes.text) {
-    sibling.dom = (prev.dom as Text)!.splitText(prev.props.nodeValue.length)
+    hydrationStack.bumpChildIndex()
+    sibling.dom = (prev.dom as Text).splitText(prev.props.nodeValue.length)
     prev = sibling
     sibling = sibling.sibling
   }
@@ -272,8 +275,6 @@ function commitWork(vNode: VNode) {
       const [mntParent, prevDom] = useHostContext(n as ElementVNode)
       commitDom(n, mntParent, prevDom)
     } else if (n.effectTag === EffectTag.PLACEMENT) {
-      // i dislike this but it prevents event listeners from sometimes being added twice.. to be investigated
-      n.prev = { ...n, props: { ...n.props }, prev: undefined }
       // propagate the effect to children
       let c = n.child
       while (c) {
@@ -282,16 +283,11 @@ function commitWork(vNode: VNode) {
       }
     }
 
-    if (!n.sibling && !n.child) {
+    if (!n.sibling) {
       hostDpStack.pop()
     }
-
-    if (commitSibling) {
-      if (n.sibling) {
-        stack.push(n.sibling)
-      } else if (n.parent && Portal.isPortal(n.parent.type)) {
-        hostDpStack.pop()
-      }
+    if (commitSibling && n.sibling) {
+      stack.push(n.sibling)
     }
     commitSibling = true
 
@@ -344,6 +340,9 @@ function commitDom(
 }
 
 function commitDeletion(vNode: VNode, deleteSibling = false) {
+  if (vNode === vNode.parent?.child) {
+    vNode.parent.child = vNode.sibling
+  }
   const stack: VNode[] = [vNode]
   while (stack.length) {
     const n = stack.pop()!
