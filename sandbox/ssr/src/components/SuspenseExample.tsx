@@ -1,34 +1,31 @@
-import { ErrorBoundary, StatefulPromise, Suspense, signal } from "kaioken"
+import { ErrorBoundary, Suspense, signal } from "kaioken"
 import { Spinner } from "./atoms/Spinner"
 import { ProductCard } from "./ProductCard"
 const productId = signal(1)
 
-type CacheOptions = {
-  cacheDuration?: number
-}
-
 const cache = new Map()
-function fetchWithCache<T>(url: string, options?: CacheOptions): Promise<T> {
+function fetchWithCache<T>(url: string): Promise<T> {
   if (!cache.has(url)) {
     cache.set(
       url,
       fetch(url).then(async (r) => {
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
         if (r.status >= 400) {
           throw new Error("Bad response")
         }
         return r.json()
       })
     )
-    if (options?.cacheDuration) {
-      setTimeout(() => cache.delete(url), options.cacheDuration)
-    }
   }
   return cache.get(url)
 }
 
-function use<T>(promise: Promise<T>) {
-  const _p = promise as StatefulPromise<T>
+function usePromise<T>(promise: Promise<T>) {
+  const _p = promise as Promise<T> & {
+    status?: "fulfilled" | "rejected" | "pending"
+    value: T
+    reason?: unknown
+  }
   if (_p.status === "fulfilled") {
     return _p.value
   } else if (_p.status === "rejected") {
@@ -62,23 +59,21 @@ export function SuspenseExample() {
         </Suspense>
       </ErrorBoundary>
 
-      {/* <ErrorBoundary fallback={<p>⚠️ Something went wrong 😭</p>}>
+      <ErrorBoundary fallback={<p>⚠️ Something went wrong 😭</p>}>
         <SomeComponentThatThrows />
-      </ErrorBoundary> */}
+      </ErrorBoundary>
     </div>
   )
 }
 
-// function SomeComponentThatThrows() {
-//   throw new Error("oops!")
-//   return <div>Something you'll never see because I throw</div>
-// }
+function SomeComponentThatThrows() {
+  throw new Error("oops!")
+  return <div>Something you'll never see because I throw</div>
+}
 
 function SomeAsyncComponent() {
-  const data = use<Product>(
-    fetchWithCache(`https://dummyjson.com/products/${productId}`, {
-      cacheDuration: 10_000,
-    })
+  const data = usePromise<Product>(
+    fetchWithCache(`https://dummyjson.com/products/${productId}`)
   )
 
   return (

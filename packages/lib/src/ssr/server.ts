@@ -15,14 +15,14 @@ import { Signal } from "../signal.js"
 import { elementTypes as et } from "../constants.js"
 import { assertValidElementProps } from "../props.js"
 
-export { renderToStream }
+export { renderToReadableStream }
 
 type RequestState = {
   stream: Readable
   ctx: AppContext
 }
 
-function renderToStream<T extends Record<string, unknown>>(
+function renderToReadableStream<T extends Record<string, unknown>>(
   el: (props: T) => JSX.Element,
   elProps = {} as T
 ): Readable {
@@ -35,7 +35,7 @@ function renderToStream<T extends Record<string, unknown>>(
   const prevCtx = ctx.current
   ctx.current = state.ctx
   state.ctx.rootNode = el instanceof Function ? createElement(el, elProps) : el
-  renderToStream_internal(state, state.ctx.rootNode, undefined, elProps)
+  renderReadableToStream_internal(state, state.ctx.rootNode, undefined, elProps)
 
   state.stream.push(null)
   renderMode.current = prev
@@ -44,10 +44,10 @@ function renderToStream<T extends Record<string, unknown>>(
   return state.stream
 }
 
-function renderToStream_internal(
+function renderReadableToStream_internal(
   state: RequestState,
   el: unknown,
-  parent?: Kaioken.VNode | undefined,
+  parent: Kaioken.VNode | undefined,
   elProps = {} as Record<string, unknown>
 ): void {
   if (el === null) return
@@ -62,15 +62,15 @@ function renderToStream_internal(
     return
   }
   if (typeof el === "function") {
-    renderToStream_internal(state, createElement(el, elProps), parent)
+    renderReadableToStream_internal(state, createElement(el, elProps), parent)
     return
   }
   if (el instanceof Array) {
-    el.forEach((c) => renderToStream_internal(state, c, parent))
+    el.forEach((c) => renderReadableToStream_internal(state, c, parent))
     return
   }
   if (Signal.isSignal(el)) {
-    renderToStream_internal(state, el.value, parent)
+    renderReadableToStream_internal(state, el.value, parent)
     return
   }
   if (!isVNode(el)) {
@@ -88,17 +88,35 @@ function renderToStream_internal(
   }
   if (type === et.fragment) {
     if (!Array.isArray(children))
-      return renderToStream_internal(state, children, el)
-    return children.forEach((c) => renderToStream_internal(state, c, el))
+      return renderReadableToStream_internal(state, children, el)
+    return children.forEach((c) =>
+      renderReadableToStream_internal(state, c, el)
+    )
   }
 
   if (typeof type !== "string") {
     node.current = el
-    if (Component.isCtor(type)) {
-      el.instance = new type(props)
-      return renderToStream_internal(state, el.instance.render(), parent, props)
+    try {
+      if (Component.isCtor(type)) {
+        el.instance = new type(props)
+        return renderReadableToStream_internal(
+          state,
+          el.instance.render(),
+          el,
+          props
+        )
+      }
+      return renderReadableToStream_internal(state, type(props), parent, props)
+    } catch (value) {
+      const e = Component.emitThrow(el, value)
+      if (e) {
+        if (e instanceof Component.ThrowableFallbackElement) {
+          return renderReadableToStream_internal(state, e.element, el)
+        }
+        console.error("[kaioken]: error caught during render", e)
+      }
     }
-    return renderToStream_internal(state, type(props), parent, props)
+    return
   }
 
   assertValidElementProps(el)
@@ -125,9 +143,9 @@ function renderToStream_internal(
       )
     } else {
       if (Array.isArray(children)) {
-        children.forEach((c) => renderToStream_internal(state, c, el))
+        children.forEach((c) => renderReadableToStream_internal(state, c, el))
       } else {
-        renderToStream_internal(state, children, el)
+        renderReadableToStream_internal(state, children, el)
       }
     }
 

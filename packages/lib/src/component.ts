@@ -42,6 +42,10 @@ abstract class Component<T = Record<string, unknown>> {
     return value
   }
 
+  static ThrowableFallbackElement = class ThrowableFallbackElement {
+    constructor(public element: JSX.Element) {}
+  }
+
   setState(setter: (state: this["state"]) => this["state"]) {
     this.state = setter({ ...this.state })
     if (this.shouldComponentUpdate(this.props, this.state)) {

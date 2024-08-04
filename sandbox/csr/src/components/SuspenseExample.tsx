@@ -20,7 +20,7 @@ function fetchWithCache<T>(url: string): Promise<T> {
   return cache.get(url)
 }
 
-function use<T>(promise: Promise<T>) {
+function usePromise<T>(promise: Promise<T>) {
   const _p = promise as Promise<T> & {
     status?: "fulfilled" | "rejected" | "pending"
     value: T
@@ -59,7 +59,7 @@ export function SuspenseExample() {
         </Suspense>
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<p>⚠️ Something went wrong 😭</p>}>
+      <ErrorBoundary debug fallback={<p>⚠️ Something went wrong 😭</p>}>
         <SomeComponentThatThrows />
       </ErrorBoundary>
     </div>
@@ -72,7 +72,7 @@ function SomeComponentThatThrows() {
 }
 
 function SomeAsyncComponent() {
-  const data = use<Product>(
+  const data = usePromise<Product>(
     fetchWithCache(`https://dummyjson.com/products/${productId}`)
   )
 

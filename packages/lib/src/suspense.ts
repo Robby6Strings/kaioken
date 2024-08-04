@@ -22,28 +22,33 @@ export class Suspense extends Component<SuspenseProps> {
 
   handleThrow(value: unknown): boolean {
     if (!(value instanceof Promise)) return false
-
-    if (renderMode.current === "stream") {
-      throw [value, this.props.fallback]
-    }
-
     if (!this.state.promises.includes(value as StatefulPromise<unknown>)) {
-      this.state.promises.push(value as StatefulPromise<unknown>)
-      if (renderMode.current === "dom") {
+      queueMicrotask(() => {
+        this.state.promises.push(value as StatefulPromise<unknown>)
         this.setState(() => ({ ...this.state }))
         value
           .then(() => this.setState(() => ({ ...this.state })))
           .catch((err) => Component.emitThrow(this.vNode.parent!, err))
-      } else if (renderMode.current === "hydrate") {
-        //debugger
-        console.log("suspense.handleThrow - hydrate")
-        value.then(() => {})
-      }
+      })
+      // if (renderMode.current === "dom") {
+      //   this.setState(() => ({ ...this.state }))
+      //   value
+      //     .then(() => this.setState(() => ({ ...this.state })))
+      //     .catch((err) => Component.emitThrow(this.vNode.parent!, err))
+      // } else if (renderMode.current === "hydrate") {
+      //   //debugger
+      //   console.log("suspense.handleThrow - hydrate")
+      //   //value.then(() => {})
+      // }
     }
     return true
   }
 
   render(): JSX.Element {
+    if (renderMode.current === "stream" || renderMode.current === "string") {
+      return this.props.fallback
+    }
+
     if (this.state.promises.length === 0) {
       // initially return children in order to trigger thrown promises
       return this.props.children
