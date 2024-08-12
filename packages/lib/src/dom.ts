@@ -2,8 +2,10 @@ import {
   booleanAttributes,
   propFilters,
   propToHtmlAttr,
+  styleObjectToCss,
   svgTags,
 } from "./utils.js"
+import type { AppContext } from "./appContext"
 import { cleanupHook } from "./hooks/utils.js"
 import { EffectTag, elementTypes } from "./constants.js"
 import { Component } from "./component.js"
@@ -157,34 +159,21 @@ function setInnerHTML(dom: SomeElement, value: unknown, prev: unknown) {
 
 function setStyleProp(dom: SomeElement, value: unknown, prev: unknown) {
   if (handleAttributeRemoval(dom, "style", value)) return
-  if (typeof value === "string" && value !== prev) {
-    dom.setAttribute("style", value)
-    return
-  }
-
-  if (
-    !!prev &&
-    typeof prev === "object" &&
-    !!value &&
-    typeof value === "object"
-  ) {
-    Object.keys(prev).forEach((k) => {
-      if (!(k in value)) dom.style[k as any] = ""
-    })
-  }
-
-  if (typeof value !== "object" || !value) return
-
-  if (prev == null) {
-    Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
-      (k) => (dom.style[k as any] = value[k as keyof typeof value] as any)
-    )
-  } else if (typeof prev === "object") {
-    Object.keys(value as Partial<CSSStyleDeclaration>).forEach(
-      (k) =>
-        value[k as keyof typeof value] !== prev[k as keyof typeof prev] &&
-        (dom.style[k as any] = value[k as keyof typeof value] as any)
-    )
+  if (prev === value) return
+  switch (typeof value) {
+    case "string":
+      dom.setAttribute("style", value)
+      break
+    case "object":
+      const newStyleString = styleObjectToCss(
+        value as Partial<CSSStyleDeclaration>
+      )
+      if (newStyleString !== prev) {
+        dom.setAttribute("style", newStyleString)
+      }
+      break
+    default:
+      break
   }
 }
 
@@ -262,7 +251,7 @@ function resetHostContext() {
   hostDpStack.length = 0
 }
 
-function commitWork(vNode: VNode) {
+function commitWork(vNode: VNode, appCtx: AppContext) {
   let commitSibling = false
   const stack: VNode[] = [vNode]
   resetHostContext()
@@ -300,23 +289,23 @@ function commitWork(vNode: VNode) {
       stack.push(n.child)
     }
 
-    onNodeUpdated(n)
+    onNodeUpdated(n, appCtx)
     n.effectTag = undefined
     n.prev = { ...n, props: { ...n.props }, prev: undefined }
   }
 }
 
-function onNodeUpdated(n: VNode) {
+function onNodeUpdated(n: VNode, appCtx: AppContext) {
   const instance = n.instance
   if (instance) {
     const onMounted = instance.componentDidMount?.bind(instance)
     if (!n.prev && onMounted) {
-      n.ctx.queueEffect(onMounted)
+      appCtx.queueEffect(onMounted)
     } else if (n.effectTag === EffectTag.UPDATE) {
       const onUpdated = instance.componentDidUpdate?.bind(instance)
-      if (onUpdated) n.ctx.queueEffect(onUpdated)
+      if (onUpdated) appCtx.queueEffect(onUpdated)
     }
-    n.ctx.scheduler?.queueCurrentNodeEffects()
+    appCtx.scheduler?.queueCurrentNodeEffects()
   }
 }
 
