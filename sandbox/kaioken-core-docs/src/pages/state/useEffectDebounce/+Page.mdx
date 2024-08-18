@@ -1,0 +1,28 @@
+import { UseEffectDebounceExample } from '$/examples/useEffectDebounce'
+
+# useEffectDebounce
+same as useEffect but will only be called once every maxWait in ms after all changes are finished (defaults to 0ms)
+
+## Demo
+<UseEffectDebounceExample />
+
+## Usage
+```tsx
+const [count, setCount] = useState(0)
+const onClick = () => setCount(count + 1)
+
+useEffectDebounce(() => {
+  console.log('count changed!')
+}, [count], {
+  maxWait: 1000 // 1s in ms
+})
+```
+
+## Type Declaration
+```tsx twoslash
+import { useEffectDebounce } from '@kaioken-core/hooks'
+
+useEffectDebounce(() => {}, [], {
+  maxWait: 0,
+})
+```

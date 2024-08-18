@@ -1,0 +1,14 @@
+import { UseMouseExample } from '$/examples/useMouse'
+
+# useMouse
+provides the x and y coords on the screen/page/client
+
+## Demo
+<UseMouseExample />
+
+## Usage
+```tsx twoslash
+import { useMouse } from '@kaioken-core/hooks'
+// ---cut---
+const { client, mouse, delta } = useMouse()
+```

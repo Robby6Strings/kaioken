@@ -1,0 +1,18 @@
+import { UseMutationObserverExample } from '$/examples/useMutationObserver'
+
+# Title goes here
+description goes here
+
+## Demo
+<UseMutationObserverExample />
+
+## Usage
+```tsx twoslash
+import { useRef } from 'kaioken'
+import { useMutationObserver } from '@kaioken-core/hooks'
+// ---cut---
+const el = useRef<HTMLElement | null>(null)
+const controls = useMutationObserver(el, (mutation) => {
+  // code goes here
+})
+```

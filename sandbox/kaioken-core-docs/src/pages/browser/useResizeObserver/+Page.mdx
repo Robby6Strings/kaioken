@@ -1,0 +1,18 @@
+import { UseResizeObserverExample } from '$/examples/useResizeObserver'
+
+# useResizeObserver
+gets called when a element is resizes
+
+## Demo
+<UseResizeObserverExample />
+
+## Usage
+```tsx twoslash
+import { useResizeObserver } from "@kaioken-core/hooks"
+import { useRef } from "kaioken"
+// ---cut---
+const ref = useRef<HTMLElement | null>(null)
+useResizeObserver(ref, () => {
+  console.log('Text area has been resized')
+})
+```

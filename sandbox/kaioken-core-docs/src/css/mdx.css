@@ -1,0 +1,21 @@
+* {
+  font-family: 'Cabin Variable' sans-serif;
+}
+
+h1 {
+  font-size: 2rem;
+  font-family: 'Cabin Variable' sans-serif;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-family: 'Cabin Variable' sans-serif;
+  padding-bottom: 0.2rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}

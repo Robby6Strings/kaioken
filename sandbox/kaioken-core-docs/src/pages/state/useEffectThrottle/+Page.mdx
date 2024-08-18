@@ -1,0 +1,28 @@
+import { UseEffectThrottleExample } from '$/examples/useEffectThrottle'
+
+# useEffectThrottle
+same as useEffect but will only be called once every maxWait in ms (defaults to 0ms)
+
+## Demo
+<UseEffectThrottleExample />
+
+## Usage
+```tsx
+const [count, setCount] = useState(0)
+const onClick = () => setCount(count + 1)
+
+useEffectThrottle(() => {
+  console.log('count changed!')
+}, [count], {
+  maxWait: 1000 // 1s in ms
+})
+```
+
+## Type Declaration
+```tsx twoslash
+import { useEffectThrottle } from '@kaioken-core/hooks'
+
+useEffectThrottle(() => {}, [], {
+  maxWait: 0,
+})
+```

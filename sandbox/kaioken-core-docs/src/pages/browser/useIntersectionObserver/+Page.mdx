@@ -1,0 +1,19 @@
+import { UseIntersectionObserverExample } from '$/examples/useIntersectionObserver'
+
+# useIntersectionObserver
+Detects that a target element's visibility.
+
+
+## Demo
+<UseIntersectionObserverExample />
+
+## Usage
+```tsx twoslash
+import { useRef } from 'kaioken'
+import { useIntersectionObserver } from '@kaioken-core/hooks'
+// ---cut---
+const ref = useRef<HTMLElement | null>(null)
+const controls = useIntersectionObserver(ref, (intersections) => {
+  // code here
+})
+```

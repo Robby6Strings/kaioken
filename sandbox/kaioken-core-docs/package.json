@@ -1,0 +1,37 @@
+{
+  "name": "kaioken-vike-template",
+  "version": "0.0.1",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx ./src/server.ts",
+    "build": "vite build",
+    "preview": "set NODE_ENV=production&& tsx ./src/server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "devDependencies": {
+    "@kaioken-core/hooks": "0.0.4-2",
+    "@shikijs/rehype": "^1.12.1",
+    "@shikijs/twoslash": "^1.12.1",
+    "@types/express": "^4.17.21",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.39",
+    "prettier": "^3.3.3",
+    "shiki": "^1.12.1",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.3",
+    "vite-plugin-kaioken": "workspace:^"
+  },
+  "dependencies": {
+    "@fontsource-variable/cabin": "^5.0.19",
+    "@mdx-js/rollup": "^3.0.1",
+    "express": "^4.19.2",
+    "fuse.js": "^7.0.0",
+    "kaioken": "workspace:^",
+    "tailwind-merge": "^2.4.0",
+    "tsx": "^4.16.2",
+    "vike": "^0.4.180",
+    "vite": "^5.3.4"
+  }
+}

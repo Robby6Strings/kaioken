@@ -1,0 +1,16 @@
+import { UseMouseInElementExample } from '$/examples/useMouseInElement'
+
+# useMouseInElement
+Provides the mouse position relative to an element
+
+## Demo
+<UseMouseInElementExample />
+
+## Usage
+```tsx twoslash
+import { useMouseInElement } from "@kaioken-core/hooks"
+import { useRef } from "kaioken"
+// ---cut---
+const ref = useRef<HTMLElement | null>(null)
+const result = useMouseInElement(ref)
+```

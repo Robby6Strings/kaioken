@@ -1,0 +1,21 @@
+# useTweenMemo
+exactly like useMemo but interpolates computed values between renders using physics based animations
+
+## Usage
+```tsx twoslash
+import { useState } from 'kaioken'
+import { useTweenMemo } from '@kaioken-core/hooks'
+// ---cut---
+const [count, setCount] = useState(0)
+const tweenCount = useTweenMemo(() => count, [count])
+```
+
+## Type definition 
+```tsx
+interface TweenedOptions<T> {
+	delay?: number;
+	duration?: number | ((from: T, to: T) => number);
+	easing?: (t: number) => number;
+	interpolate?: (a: T, b: T) => (t: number) => T;
+}
+```

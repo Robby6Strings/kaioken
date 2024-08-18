@@ -1,0 +1,25 @@
+# useSpringMemo
+exactly like useMemo but interpolates computed values between renders using physics based animations
+
+## Usage
+```tsx twoslash
+import { useState } from 'kaioken'
+import { useSpringMemo } from '@kaioken-core/hooks'
+// ---cut---
+const [count, setCount] = useState(0)
+const springCount = useSpringMemo(() => count, [count])
+```
+
+## Type definition 
+```tsx
+interface SpringUpdateOpts {
+	hard?: any;
+	soft?: string | number | boolean;
+}
+
+interface SpringOpts extends SpringUpdateOpts {
+	stiffness: number;
+	damping: number;
+	precision: number;
+}
+```
