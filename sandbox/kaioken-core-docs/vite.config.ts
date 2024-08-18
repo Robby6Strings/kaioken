@@ -10,6 +10,9 @@ import {
 } from '@shikijs/twoslash'
 
 export default defineConfig({
+  optimizeDeps: {
+		include: ['kaioken']
+	},
   resolve: {
     alias: {
       $: path.join(__dirname, "src"),
