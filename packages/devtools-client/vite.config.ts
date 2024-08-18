@@ -3,6 +3,9 @@ import { PluginOption, defineConfig } from "vite"
 import { viteSingleFile } from "vite-plugin-singlefile"
 
 export default defineConfig({
+  optimizeDeps: {
+		exclude: ['kaioken']
+	},
   esbuild: {
     jsxInject: `import * as kaioken from "kaioken"`,
     jsx: "transform",

@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "devDependencies": {
-    "@kaioken-core/hooks": "0.0.4-2",
+    "@kaioken-core/hooks": "0.0.4-5",
     "@shikijs/rehype": "^1.12.1",
     "@shikijs/twoslash": "^1.12.1",
     "@types/express": "^4.17.21",
@@ -20,8 +20,7 @@
     "prettier": "^3.3.3",
     "shiki": "^1.12.1",
     "tailwindcss": "^3.4.6",
-    "typescript": "^5.5.3",
-    "vite-plugin-kaioken": "workspace:^"
+    "typescript": "^5.5.3"
   },
   "dependencies": {
     "@fontsource-variable/cabin": "^5.0.19",
@@ -32,6 +31,7 @@
     "tailwind-merge": "^2.4.0",
     "tsx": "^4.16.2",
     "vike": "^0.4.180",
-    "vite": "^5.3.4"
+    "vite": "^5.3.4",
+		"vite-plugin-kaioken": "workspace:^"
   }
 }

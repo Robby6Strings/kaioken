@@ -10,8 +10,11 @@ import {
 } from '@shikijs/twoslash'
 
 export default defineConfig({
+  ssr: {
+		external: ['kaioken'],
+	},
   optimizeDeps: {
-		include: ['kaioken']
+		exclude: ['kaioken'],
 	},
   resolve: {
     alias: {

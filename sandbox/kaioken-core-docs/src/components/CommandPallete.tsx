@@ -62,7 +62,7 @@ export const CommandPalette: Kaioken.FC<{ container: Kaioken.Ref<HTMLElement | n
     return fuse.search(searchValue.value).map(({ item }) => item)
   }, [searchValue.value])
 
-  const keyboardKeys = useMemo(() => [...keyboardList.value.keys()].reverse(), [...keyboardList.value.keys()])
+  const keyboardKeys = useMemo(() => [...keyboardList.value.keys()], [...keyboardList.value.keys()])
 
   useEffect(() => {
     keyboardIndex.value = null
