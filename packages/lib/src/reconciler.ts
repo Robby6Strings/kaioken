@@ -225,7 +225,7 @@ function updateNode(parent: VNode, oldNode: VNode | null, newNode: VNode) {
     oldNode.frozen = newNode.frozen
     return oldNode
   }
-  const created = createElement(nodeType, newNode.props)
+  const created = newNode
   created.parent = parent
   return created
 }
@@ -260,7 +260,7 @@ function createChild(parent: VNode, child: unknown): VNode | null {
 
   if (typeof child === "object" && child !== null) {
     if (isVNode(child)) {
-      const newNode = createElement(child.type, child.props)
+      const newNode = child
       newNode.parent = parent
       newNode.effectTag = EFFECT_TAG.PLACEMENT
       return newNode

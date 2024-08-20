@@ -1,5 +1,5 @@
 import { Readable } from "node:stream"
-import { Component, createElement } from "../index.js"
+import { Component, createElement, fragment } from "../index.js"
 import { AppContext } from "../appContext.js"
 import { renderMode, ctx, node } from "../globals.js"
 
@@ -33,7 +33,7 @@ export function renderToReadableStream<T extends Record<string, unknown>>(
   }
   const prevCtx = ctx.current
   ctx.current = state.ctx
-  state.ctx.rootNode = createElement(el, elProps)
+  state.ctx.rootNode = fragment({ children: createElement(el, elProps) })
   renderToStream_internal(state, state.ctx.rootNode, undefined, elProps)
 
   state.stream.push(null)
@@ -53,6 +53,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
   if (el === undefined) return
   if (typeof el === "boolean") return
   if (typeof el === "string") {
+    ctx.current.elementCounter++
     state.stream.push(encodeHtmlEntities(el))
     return
   }
@@ -65,6 +66,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     return
   }
   if (el instanceof Array) {
+    ctx.current.elementCounter++
     el.forEach((c) => renderToStream_internal(state, c, parent))
     return
   }
@@ -72,10 +74,7 @@ function renderToStream_internal<T extends Record<string, unknown>>(
     renderToStream_internal(state, el.value, parent)
     return
   }
-  if (!isVNode(el)) {
-    state.stream.push(String(el))
-    return
-  }
+  if (!isVNode(el)) return
 
   el.parent = parent
   const props = el.props ?? {}

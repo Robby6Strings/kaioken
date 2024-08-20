@@ -1,6 +1,6 @@
 import { ctx, node, renderMode } from "./globals.js"
 import { AppContext } from "./appContext.js"
-import { createElement } from "./element.js"
+import { createElement, fragment } from "./element.js"
 import {
   encodeHtmlEntities,
   isVNode,
@@ -22,7 +22,7 @@ export function renderToString<T extends Record<string, unknown>>(
   renderMode.current = "string"
   const prevCtx = ctx.current
   const c = (ctx.current = new AppContext(el, elProps))
-  c.rootNode = createElement(el, elProps)
+  c.rootNode = fragment({ children: createElement(el, elProps) })
   const res = renderToString_internal(c.rootNode, undefined, elProps)
   renderMode.current = prev
   ctx.current = prevCtx
@@ -37,15 +37,22 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (el === null) return ""
   if (el === undefined) return ""
   if (typeof el === "boolean") return ""
-  if (typeof el === "string") return encodeHtmlEntities(el)
-  if (typeof el === "number" || typeof el === "bigint") return el.toString()
+  if (typeof el === "string") {
+    ctx.current.elementCounter++
+    return encodeHtmlEntities(el)
+  }
+  if (typeof el === "number" || typeof el === "bigint") {
+    ctx.current.elementCounter++
+    return el.toString()
+  }
   if (typeof el === "function")
     return renderToString_internal(createElement(el, elProps), parent)
   if (el instanceof Array) {
+    ctx.current.elementCounter++
     return el.map((c) => renderToString_internal(c, parent)).join("")
   }
   if (Signal.isSignal(el)) return renderToString_internal(el.value, parent)
-  if (!isVNode(el)) return String(el)
+  if (!isVNode(el)) return ""
 
   el.parent = parent
   const props = el.props ?? {}
@@ -54,8 +61,7 @@ function renderToString_internal<T extends Record<string, unknown>>(
   if (type === ELEMENT_TYPE.text)
     return encodeHtmlEntities(props.nodeValue ?? "")
   if (type === ELEMENT_TYPE.fragment) {
-    if (!Array.isArray(children)) return renderToString_internal(children, el)
-    return children.map((c) => renderToString_internal(c, el, props)).join("")
+    return renderToString_internal(children, el)
   }
 
   if (typeof type !== "string") {
