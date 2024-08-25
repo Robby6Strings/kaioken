@@ -65,7 +65,7 @@ function ValueFieldEditor({
   } else if (value === undefined) {
     return <TextValueDisplay>undefined</TextValueDisplay>
   }
-  if (value instanceof (window.opener.Node as typeof Node)) {
+  if (value instanceof ((window.opener ?? window).Node as typeof Node)) {
     return (
       <TextValueDisplay>
         {"<"}

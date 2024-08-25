@@ -31,7 +31,7 @@ export function SelectedNodeView({
 
     kaiokenGlobal?.on("update", handleUpdate)
     return () => kaiokenGlobal?.off("update", handleUpdate)
-  }, [])
+  }, [selectedApp, selectedNode])
 
   const refresh = () => {
     if (!selectedNode || !selectedApp?.mounted) return

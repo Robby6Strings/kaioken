@@ -7,7 +7,8 @@ import { useDevTools } from "./hooks/useDevtools"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
-import { toggleElementToVnode } from "./store"
+import { nodeInspection, toggleElementToVnode } from "./store"
+import { SelectedNodeView } from "devtools-shared"
 
 export default function App() {
   const toggled = signal(false)
@@ -39,6 +40,8 @@ export default function App() {
       { value: true }
     )
   }
+
+  const btnContainerRect = btnContainerRef.current?.getBoundingClientRect()
 
   return (
     <>
@@ -97,6 +100,34 @@ export default function App() {
           <Flame />
         </button>
       </div>
+      {nodeInspection.value && (
+        <div
+          className="fixed will-change-transform bg-[#000c]"
+          style={{
+            left: (btnContainerRect ? btnContainerRect.right : "0") + "px",
+            top: (btnContainerRect ? btnContainerRect.top : "0") + "px",
+          }}
+        >
+          <SelectedNodeView
+            kaiokenGlobal={window.__kaioken}
+            selectedApp={nodeInspection.value.app}
+            selectedNode={nodeInspection.value.node}
+            setSelectedNode={(node) => {
+              if (node === null) {
+                nodeInspection.value = null
+                return
+              }
+              if (nodeInspection.value === null) {
+                throw new Error(
+                  "setSelectedNode should only be called when nodeInspection.value is not null"
+                )
+              }
+              nodeInspection.value.node = node
+              nodeInspection.notify()
+            }}
+          />
+        </div>
+      )}
       <div hidden>
         {/* <SelectedNodeView
           kaiokenGlobal={window.__kaioken}

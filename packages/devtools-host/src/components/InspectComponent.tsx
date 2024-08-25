@@ -4,14 +4,31 @@ import {
   useEventListener,
   useMouse,
 } from "@kaioken-core/hooks"
-import { useEffect, useMemo, useRef } from "kaioken"
+import { AppContext, useEffect, useMemo, useRef } from "kaioken"
 import { getComponentVnodeFromElement, getNearestElm } from "../utils"
 import { vNodeContains } from "kaioken/utils"
-import { toggleElementToVnode, popup } from "../store"
-import { useDevTools } from "../hooks/useDevtools"
+import { toggleElementToVnode, popup, nodeInspection } from "../store"
+//import { useDevTools } from "../hooks/useDevtools"
+
+const emitSelectNode = (w: Window, elApp: AppContext, vnode: any) => {
+  window.__kaioken?.emit(
+    // @ts-expect-error we have our own custom event
+    "__kaiokenDevtoolsInspectElementNode",
+    elApp,
+    vnode
+  )
+  window.__kaioken?.emit(
+    // @ts-expect-error we have our own custom event
+    "__kaiokenDevtoolsInspectElementValue",
+    { enabled: false, sender: null }
+  )
+  w.focus()
+}
+
+// open and send: openDevTools((w) => emitSelectNode(w, elApp, vnode))
 
 export const InspectComponent: Kaioken.FC = () => {
-  const openDevTools = useDevTools()
+  //const openDevTools = useDevTools()
   const { mouse } = useMouse()
 
   const controls = useElementByPoint({
@@ -63,29 +80,17 @@ export const InspectComponent: Kaioken.FC = () => {
   }, [vnode, element])
 
   useEventListener("click", (e) => {
-    if (toggleElementToVnode.value === true && vnode && elApp) {
-      e.preventDefault()
-      const emitSelectNode = (w: Window) => {
-        window.__kaioken?.emit(
-          // @ts-expect-error we have our own custom event
-          "__kaiokenDevtoolsInspectElementNode",
-          elApp,
-          vnode
-        )
-        window.__kaioken?.emit(
-          // @ts-expect-error we have our own custom event
-          "__kaiokenDevtoolsInspectElementValue",
-          { value: false }
-        )
-        w.focus()
-      }
+    if (!toggleElementToVnode.value) return
+    if (!vnode || !elApp) return
+    e.preventDefault()
 
-      if (!popup.value) {
-        openDevTools((w) => emitSelectNode(w))
-      } else {
-        emitSelectNode(popup.value)
-      }
+    if (popup.value) {
+      emitSelectNode(popup.value, elApp, vnode)
+      return
     }
+
+    nodeInspection.value = { node: vnode, app: elApp }
+    toggleElementToVnode.value = false
   })
 
   return (

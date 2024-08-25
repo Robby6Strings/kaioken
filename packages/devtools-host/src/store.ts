@@ -1,4 +1,9 @@
-import { signal } from "kaioken"
+import { type AppContext, signal } from "kaioken"
+
+export const nodeInspection = signal<null | {
+  node: Kaioken.VNode & { type: Function }
+  app: AppContext
+}>(null)
 
 export const toggleElementToVnode = signal(false)
 if ("window" in globalThis) {
