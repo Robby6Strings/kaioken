@@ -8,8 +8,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "rgb(220, 20, 60)",
-        "primary-light": "rgb(228 50 86)",
+        crimson: "crimson",
       },
     },
   },

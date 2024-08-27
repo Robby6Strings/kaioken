@@ -79,7 +79,7 @@ export function NodeListItem({
             inspectComponent.value = null
             setSelectedNode(isSelected ? null : (node as any))
           }}
-          className={`flex gap-2 items-center cursor-pointer mb-1 scroll-m-12 ${isSelected ? "font-medium bg-primary selected-vnode" : ""}`}
+          className={`flex gap-2 items-center cursor-pointer mb-1 scroll-m-12 ${isSelected ? "font-medium bg-crimson selected-vnode" : ""}`}
           data-id={id}
         >
           {showChildren && (
@@ -97,7 +97,7 @@ export function NodeListItem({
           )}
           <div className={showChildren ? "" : "ml-6"}>
             <span className={isSelected ? "" : "text-neutral-400"}>{"<"}</span>
-            <span className={isSelected ? "" : "text-primary"}>
+            <span className={isSelected ? "" : "text-crimson"}>
               {getNodeName(node)}
             </span>
             <span className={isSelected ? "" : "text-neutral-400"}>{">"}</span>

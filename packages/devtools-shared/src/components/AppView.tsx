@@ -67,7 +67,7 @@ export function AppView() {
         <h2 className="font-bold flex-shrink-0">App View</h2>
         <input
           ref={searchRef}
-          className="bg-[#171616] px-1 py-2 w-full focus:outline focus:outline-primary"
+          className="bg-[#171616] px-1 py-2 w-full focus:outline focus:outline-crimson"
           placeholder="Search for component"
           type="text"
           value={search.value}

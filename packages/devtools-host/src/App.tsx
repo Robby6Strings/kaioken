@@ -118,13 +118,12 @@ export default function App() {
       </div>
       {nodeInspection.value && (
         <div
-          className="fixed will-change-transform bg-[#000c] left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4"
-          style={
-            {
-              // left: (btnContainerRect ? btnContainerRect.right : "0") + "px",
-              // top: (btnContainerRect ? btnContainerRect.top : "0") + "px",
-            }
-          }
+          className="kaioken-devtools-embedded fixed will-change-transform"
+          style={{
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
         >
           <DevtoolsApp />
         </div>
