@@ -1,5 +1,5 @@
 import "./index.css"
 import { mount } from "kaioken"
-import { App } from "./App"
+import { DevtoolsApp } from "devtools-shared"
 
-mount(App, document.body)
+mount(DevtoolsApp, document.body)

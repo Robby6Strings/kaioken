@@ -1,10 +1,6 @@
 import { AppContext, createStore, signal } from "kaioken"
 import { isDevtoolsApp } from "./utils"
-
-export const kaiokenGlobal =
-  "window" in globalThis
-    ? (window.opener.__kaioken as typeof window.__kaioken)
-    : undefined
+import { kaiokenGlobal } from "./kaiokenGlobal"
 
 export const toggleElementToVnode = signal(false)
 kaiokenGlobal?.on(
@@ -63,15 +59,9 @@ kaiokenGlobal?.on("mount", (app) => {
 kaiokenGlobal?.on("unmount", (app) => {
   useDevtoolsStore.methods.removeApp(app)
   let nextSelected: AppContext | null = useDevtoolsStore.getState().selectedApp
-  if (useDevtoolsStore.getState().selectedApp === app) {
-    nextSelected = null
-  }
-
-  if (nextSelected === null) {
+  if (nextSelected === app) {
     const apps = useDevtoolsStore.getState().apps
-    if (apps.length > 0) {
-      nextSelected = apps[0]
-    }
+    nextSelected = apps.length > 0 ? apps[0] : null
   }
   useDevtoolsStore.methods.setSelectedApp(nextSelected)
 })

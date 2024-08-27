@@ -83,12 +83,7 @@ export const InspectComponent: Kaioken.FC = () => {
     if (!toggleElementToVnode.value) return
     if (!vnode || !elApp) return
     e.preventDefault()
-
-    if (popup.value) {
-      emitSelectNode(popup.value, elApp, vnode)
-      return
-    }
-
+    if (popup.value) return emitSelectNode(popup.value, elApp, vnode)
     nodeInspection.value = { node: vnode, app: elApp }
     toggleElementToVnode.value = false
   })

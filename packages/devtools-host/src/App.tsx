@@ -8,7 +8,7 @@ import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
 import { nodeInspection, toggleElementToVnode } from "./store"
-import { SelectedNodeView } from "devtools-shared"
+import { DevtoolsApp } from "devtools-shared"
 
 export default function App() {
   const toggled = signal(false)
@@ -41,7 +41,7 @@ export default function App() {
     )
   }
 
-  const btnContainerRect = btnContainerRef.current?.getBoundingClientRect()
+  //const btnContainerRect = btnContainerRef.current?.getBoundingClientRect()
 
   return (
     <>
@@ -102,38 +102,17 @@ export default function App() {
       </div>
       {nodeInspection.value && (
         <div
-          className="fixed will-change-transform bg-[#000c]"
-          style={{
-            left: (btnContainerRect ? btnContainerRect.right : "0") + "px",
-            top: (btnContainerRect ? btnContainerRect.top : "0") + "px",
-          }}
+          className="fixed will-change-transform bg-[#000c] left-2/4 top-2/4 -translate-x-2/4 -translate-y-2/4"
+          style={
+            {
+              // left: (btnContainerRect ? btnContainerRect.right : "0") + "px",
+              // top: (btnContainerRect ? btnContainerRect.top : "0") + "px",
+            }
+          }
         >
-          <SelectedNodeView
-            kaiokenGlobal={window.__kaioken}
-            selectedApp={nodeInspection.value.app}
-            selectedNode={nodeInspection.value.node}
-            setSelectedNode={(node) => {
-              if (node === null) {
-                nodeInspection.value = null
-                return
-              }
-              if (nodeInspection.value === null) {
-                throw new Error(
-                  "setSelectedNode should only be called when nodeInspection.value is not null"
-                )
-              }
-              nodeInspection.value.node = node
-              nodeInspection.notify()
-            }}
-          />
+          <DevtoolsApp />
         </div>
       )}
-      <div hidden>
-        {/* <SelectedNodeView
-          kaiokenGlobal={window.__kaioken}
-          selectedApp={useDevTools().selectedApp}
-        /> */}
-      </div>
       <InspectComponent />
     </>
   )

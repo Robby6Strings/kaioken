@@ -1,12 +1,5 @@
-import {
-  useState,
-  fragment,
-  useMemo,
-  useEffect,
-  useRef,
-  useContext,
-} from "kaioken"
-import { Chevron } from "devtools-shared"
+import { useState, fragment, useMemo, useEffect, useRef } from "kaioken"
+import { Chevron } from "../icons/Chevron"
 import { useDevtoolsStore } from "../store"
 import {
   getNodeName,
@@ -16,7 +9,7 @@ import {
   searchMatchesItem,
 } from "../utils"
 import { inspectComponent, KeyboardMap } from "../signal"
-import { SearchContext } from "../context"
+import { useSearch } from "../searchContext"
 
 export function NodeListItem({
   node,
@@ -37,7 +30,7 @@ export function NodeListItem({
   const id = useMemo(() => {
     return crypto.randomUUID()
   }, [])
-  const search = useContext(SearchContext)
+  const search = useSearch()
 
   const isParentOfInspectNode = useMemo(() => {
     if (inspectComponent.value == null) return null

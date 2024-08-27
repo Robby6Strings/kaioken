@@ -5,11 +5,12 @@ import {
   useEffect,
   useRequestUpdate,
 } from "kaioken"
-import { useDevtoolsStore, kaiokenGlobal, toggleElementToVnode } from "../store"
+import { useDevtoolsStore, toggleElementToVnode } from "../store"
 import { NodeListItem } from "./NodeListItem"
 import { useKeyboardControls } from "../hooks/KeyboardControls"
-import { SearchContext } from "../context"
 import { inspectComponent } from "../signal"
+import { SearchContext } from "../searchContext"
+import { kaiokenGlobal } from "../kaiokenGlobal"
 
 export function AppView() {
   const {

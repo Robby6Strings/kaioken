@@ -1,11 +1,12 @@
-import { kaiokenGlobal, toggleElementToVnode, useDevtoolsStore } from "./store"
-import { SelectedNodeView } from "devtools-shared"
+import { toggleElementToVnode, useDevtoolsStore } from "./store"
+import { SelectedNodeView } from "./components/SelectedNodeView"
+import { FiftyFiftySplitter } from "./components/FiftyFiftySplitter"
 import { AppView } from "./components/AppView"
 import { Select } from "./components/Select"
-import { FiftyFiftySplitter } from "./components/FiftyFiftySplitter"
 import { SquareMouse } from "./icons/SquareMouse"
+import { kaiokenGlobal } from "./kaiokenGlobal"
 
-export function App() {
+export function DevtoolsApp() {
   const {
     value: { apps, selectedApp, selectedNode },
     setSelectedApp,
@@ -17,7 +18,6 @@ export function App() {
   }))
 
   const onInspectComponent = () => {
-    if (!window.opener) return
     kaiokenGlobal?.emit(
       // @ts-expect-error We have our own custom type here
       "__kaiokenDevtoolsInspectElementValue",
@@ -31,7 +31,7 @@ export function App() {
         <Select
           className="bg-neutral-700 text-white rounded"
           options={[
-            { text: "Select App", key: "" },
+            { text: "Select App", key: "select-app" },
             ...apps.map((app) => app.name),
           ]}
           value={selectedApp?.name ?? ""}

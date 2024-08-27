@@ -1,7 +1,7 @@
 import { AppContext, Signal, useEffect, useRequestUpdate } from "kaioken"
-import { applyObjectChangeFromKeys, getNodeName } from "./utils"
+import { applyObjectChangeFromKeys, getNodeName } from "../utils"
 import { NodeDataSection } from "./NodeDataSection"
-import { RefreshIcon } from "./RefreshIcon"
+import { RefreshIcon } from "../icons/RefreshIcon"
 import { ValueEditor } from "./ValueEditor"
 
 type SelectedNodeViewProps = {
