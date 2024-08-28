@@ -28,8 +28,10 @@ export const useKeyboardControls = () => {
     domNode.scrollIntoView({
       behavior: "smooth",
     })
-    dt.value.selectedNode = metaData.vNode as any
-    dt.notify()
+    dt.value = {
+      ...dt.value,
+      selectedNode: metaData.vNode as any,
+    }
   }
 
   const findNextSibling = (domNode: Element | null) => {
@@ -57,8 +59,10 @@ export const useKeyboardControls = () => {
 
   useKeyStroke(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"], (e) => {
     if (dtStore.inspectNode) {
-      dt.value.inspectNode = null
-      dt.notify()
+      dt.value = {
+        ...dt.value,
+        inspectNode: null,
+      }
     }
     if (
       document.activeElement &&

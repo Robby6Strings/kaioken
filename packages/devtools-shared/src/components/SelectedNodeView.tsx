@@ -52,7 +52,7 @@ export function SelectedNodeView({
       </h2>
       <NodeDataSection title="props">
         <pre className="p-2 bg-neutral-800">
-          {JSON.stringify(nodeProps, null, 2)}
+          <ValueEditor data={nodeProps} onChange={() => {}} mutable={false} />
         </pre>
       </NodeDataSection>
       <NodeDataSection title="hooks">

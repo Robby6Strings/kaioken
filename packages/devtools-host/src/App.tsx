@@ -64,8 +64,10 @@ export default function App() {
   }, [toggled.value, updateBtnPos])
 
   const handleToggleInspect = () => {
-    dt.value.inspectorEnabled = !dt.value.inspectorEnabled
-    dt.notify()
+    dt.value = {
+      ...dt.value,
+      inspectorEnabled: !dt.value.inspectorEnabled,
+    }
   }
 
   return (

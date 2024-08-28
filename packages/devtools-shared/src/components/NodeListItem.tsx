@@ -83,9 +83,11 @@ export function NodeListItem({
         <h2
           ref={ref}
           onclick={() => {
-            dt.value.inspectNode = null
-            dt.value.selectedNode = isSelected ? null : (node as any)
-            dt.notify()
+            dt.value = {
+              ...dt.value,
+              inspectNode: null,
+              selectedNode: isSelected ? null : (node as any),
+            }
           }}
           className={`flex gap-2 items-center cursor-pointer mb-1 scroll-m-12 ${isSelected ? "font-medium bg-crimson selected-vnode" : ""}`}
           data-id={id}
@@ -98,8 +100,10 @@ export function NodeListItem({
               onclick={(e) => {
                 e.preventDefault()
                 e.stopImmediatePropagation()
-                dt.value.inspectNode = null
-                dt.notify()
+                dt.value = {
+                  ...dt.value,
+                  inspectNode: null,
+                }
                 setCollapsed((prev) => !prev)
               }}
             />

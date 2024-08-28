@@ -35,19 +35,24 @@ if ("window" in globalThis) {
     window.__kaiokenDevtoolsState = dt
     kaiokenGlobal?.on("mount", (app) => {
       if (!isDevtoolsApp(app)) {
-        dt.value.apps.push(app)
-        dt.value.selectedApp ??= app
-        dt.notify()
+        dt.value = {
+          ...dt.value,
+          apps: [...dt.value.apps, app],
+          selectedApp: dt.value.selectedApp ?? app,
+        }
       }
     })
     kaiokenGlobal?.on("unmount", (app) => {
-      dt.value.apps = dt.value.apps.filter((a) => a !== app)
+      const apps = dt.value.apps.filter((a) => a !== app)
       let nextSelected: AppContext | null = dt.value.selectedApp
       if (nextSelected === app) {
         nextSelected = dt.value.apps[0] ?? null
       }
-      dt.value.selectedApp = nextSelected
-      dt.notify()
+      dt.value = {
+        ...dt.value,
+        apps,
+        selectedApp: nextSelected,
+      }
     })
   } else {
     ;(window.opener as typeof window).__kaiokenDevtoolsState.subscribe(

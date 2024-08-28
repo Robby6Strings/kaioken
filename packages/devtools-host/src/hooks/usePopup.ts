@@ -30,13 +30,18 @@ export const usePopup = () => {
       if (!w) return console.error("[kaioken]: Unable to open devtools window")
 
       w.onload = () => {
-        dt.value.popupWindow = w
-        dt.notify()
+        dt.value = {
+          ...dt.value,
+          popupWindow: w,
+        }
         console.debug("[kaioken]: devtools window opened")
         setTimeout(() => onOpened?.(w), 250)
         w.onbeforeunload = () => {
           console.debug("[kaioken]: devtools window closed")
-          dt.value.popupWindow = null
+          dt.value = {
+            ...dt.value,
+            popupWindow: null,
+          }
           dt.notify()
         }
       }

@@ -73,12 +73,14 @@ export const InspectComponent: Kaioken.FC = () => {
     if (!inspectorEnabled) return
     if (!vnode || !elApp) return
     e.preventDefault()
-    dt.value.selectedApp = elApp
-    dt.value.selectedNode = vnode
-    dt.value.inspectNode = vnode
-    dt.value.inspectorEnabled = false
-    dt.notify()
 
+    dt.value = {
+      ...dt.value,
+      selectedApp: elApp,
+      selectedNode: vnode,
+      inspectNode: vnode,
+      inspectorEnabled: false,
+    }
     if (popupWindow) popupWindow.focus()
   })
 

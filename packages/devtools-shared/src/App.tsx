@@ -16,8 +16,17 @@ export function DevtoolsApp() {
     useSyncExternalStore(dtSub, dtGet)
 
   const onToggleInspect = () => {
-    dt.value.inspectorEnabled = !dt.value.inspectorEnabled
-    dt.notify()
+    dt.value = {
+      ...dt.value,
+      inspectorEnabled: !dt.value.inspectorEnabled,
+    }
+  }
+
+  const selectApp = (name: string) => {
+    dt.value = {
+      ...dt.value,
+      selectedApp: apps.find((a) => a.name === name)!,
+    }
   }
 
   return (
@@ -30,9 +39,7 @@ export function DevtoolsApp() {
             ...apps.map((app) => app.name),
           ]}
           value={selectedApp?.name ?? ""}
-          onChange={(name) =>
-            (dt.value.selectedApp = apps.find((a) => a.name === name)!)
-          }
+          onChange={selectApp}
         />
         <button
           onclick={onToggleInspect}
@@ -47,7 +54,12 @@ export function DevtoolsApp() {
           <SelectedNodeView
             selectedApp={selectedApp}
             selectedNode={selectedNode}
-            setSelectedNode={(n) => ((dt.value.selectedNode = n), dt.notify())}
+            setSelectedNode={(n) => {
+              dt.value = {
+                ...dt.value,
+                selectedNode: n,
+              }
+            }}
             kaiokenGlobal={kaiokenGlobal}
           />
         )}
