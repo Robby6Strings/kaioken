@@ -44,9 +44,9 @@ if ("window" in globalThis) {
       dt.value.apps = dt.value.apps.filter((a) => a !== app)
       let nextSelected: AppContext | null = dt.value.selectedApp
       if (nextSelected === app) {
-        const apps = dt.value.apps
-        nextSelected = apps.length > 0 ? apps[0] : null
+        nextSelected = dt.value.apps[0] ?? null
       }
+      dt.value.selectedApp = nextSelected
       dt.notify()
     })
   } else {
