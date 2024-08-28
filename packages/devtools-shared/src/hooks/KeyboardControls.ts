@@ -1,6 +1,6 @@
 import { useKeyStroke } from "@kaioken-core/hooks"
 import { KeyboardMap } from "../keyboardMap"
-import { useRef, useSyncExternalStore } from "kaioken"
+import { useAppContext, useRef, useSyncExternalStore } from "kaioken"
 import { useDevtools } from "../store"
 
 const dt = useDevtools()
@@ -8,6 +8,8 @@ const dtGet = dt.peek.bind(dt)
 const dtSub = dt.subscribe.bind(dt)
 
 export const useKeyboardControls = () => {
+  const appContext = useAppContext()
+  const doc = window.opener ? document : appContext.root!
   const dtStore = useSyncExternalStore(dtSub, dtGet)
   const searchRef = useRef<HTMLElement | null>(null)
 
@@ -73,7 +75,7 @@ export const useKeyboardControls = () => {
     }
 
     e.preventDefault()
-    const selectedDomNode = document.querySelector(".selected-vnode")
+    const selectedDomNode = doc.querySelector(".selected-vnode")
     if (selectedDomNode === null) {
       if (e.key === "ArrowDown") {
         activeFirstDom()
