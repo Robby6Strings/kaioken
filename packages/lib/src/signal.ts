@@ -51,6 +51,10 @@ export class Signal<T> {
     return `${this.#value}`
   }
 
+  peek() {
+    return this.#value
+  }
+
   static isSignal(x: any): x is Signal<any> {
     return typeof x === "object" && !!x && signalSymbol in x
   }
@@ -81,7 +85,7 @@ export class Signal<T> {
 
   notify() {
     this.#subscribers.forEach((sub) => {
-      if (sub instanceof Function) {
+      if (typeof sub === "function") {
         return sub(this.#value)
       }
       getVNodeAppContext(sub).requestUpdate(sub)

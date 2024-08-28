@@ -11,6 +11,9 @@ export default defineConfig({
     loader: "tsx",
     include: ["**/*.tsx", "**/*.ts", "**/*.jsx", "**/*.js"],
   },
+  build: {
+    minify: false,
+  },
   plugins: [
     viteSingleFile(),
     {

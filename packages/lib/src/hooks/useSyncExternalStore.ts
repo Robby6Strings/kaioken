@@ -3,16 +3,10 @@ import { sideEffectsEnabled, useHook } from "./utils.js"
 
 export function useSyncExternalStore<T>(
   subscribe: (callback: () => void) => () => void,
-  getState: () => T,
-  getServerState?: () => T
+  getState: () => T
 ): T {
   if (!sideEffectsEnabled()) {
-    if (getServerState === undefined) {
-      throw new Error(
-        "[kaioken]: useSyncExternalStore must receive a getServerSnapshot function if the component is rendered on the server."
-      )
-    }
-    return getServerState()
+    return getState()
   }
 
   return useHook(
@@ -25,9 +19,7 @@ export function useSyncExternalStore<T>(
       if (isInit) {
         hook.state = getState()
         hook.unsubscribe = subscribe(() => {
-          const newState = getState()
-          if (Object.is(hook.state, newState)) return
-          hook.state = newState
+          hook.state = getState()
           update()
         })
         hook.cleanup = () => {

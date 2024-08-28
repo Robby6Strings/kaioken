@@ -2,17 +2,30 @@ import { twMerge } from "tailwind-merge"
 import { Flame } from "./icon/Flame"
 import { useBtnPos } from "./hooks/useBtnPos"
 import { useEffectDeep, useSpring } from "@kaioken-core/hooks"
-import { signal, Transition, useEffect, useLayoutEffect, useRef } from "kaioken"
-import { useDevTools } from "./hooks/useDevtools"
+import {
+  signal,
+  Transition,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+} from "kaioken"
+import { usePopup } from "./hooks/usePopup"
 import { InspectComponent } from "./components/InspectComponent"
 import { PageInfo } from "./icon/PageInfo"
 import { SquareMouse } from "./icon/SquareMouse"
-import { nodeInspection, toggleElementToVnode } from "./store"
-import { DevtoolsApp } from "devtools-shared"
+import { DevtoolsApp, useDevtools } from "devtools-shared"
+
+const dt = useDevtools()
+const dtGet = dt.peek.bind(dt)
+const dtSub = dt.subscribe.bind(dt)
 
 export default function App() {
   const toggled = signal(false)
-  const handleOpen = useDevTools()
+  const handleOpen = usePopup()
+  const { inspectorEnabled, selectedApp, selectedNode, popupWindow } =
+    useSyncExternalStore(dtSub, dtGet)
+
   const {
     btnCoords,
     btnRef,
@@ -51,14 +64,9 @@ export default function App() {
   }, [toggled.value, updateBtnPos])
 
   const handleToggleInspect = () => {
-    window.__kaioken?.emit(
-      // @ts-expect-error We have our own custom type here
-      "__kaiokenDevtoolsInspectElementValue",
-      { value: true }
-    )
+    dt.value.inspectorEnabled = !dt.value.inspectorEnabled
+    dt.notify()
   }
-
-  //const btnContainerRect = btnContainerRef.current?.getBoundingClientRect()
 
   return (
     <>
@@ -68,7 +76,7 @@ export default function App() {
       />
       <div
         ref={btnRef}
-        className={`flex ${isHorizontalSnap ? "flex-col" : ""} ${toggled.value ? "rounded-3xl" : "rounded-full"} p-1 gap-1 items-center will-change-transform bg-crimson`}
+        className={`flex ${isHorizontalSnap ? "flex-col" : ""} ${toggled.value ? "rounded-3xl" : "rounded-full"} gap-1 items-center will-change-transform bg-crimson`}
         style={{
           transform: `translate3d(${Math.round(springBtnCoords.x)}px, ${Math.round(springBtnCoords.y)}px, 0)`,
         }}
@@ -81,21 +89,20 @@ export default function App() {
           }}
           element={(state) => {
             if (state === "exited") return null
-            const scale = state === "entered" ? "1" : "0.5"
             const opacity = state === "entered" ? "1" : "0"
             return (
               <>
                 <button
                   onclick={() => handleOpen()}
-                  style={{ transform: `scale(${scale})`, opacity }}
-                  className="transition text-white rounded-full p-1 hover:bg-[#0003]"
+                  style={{ opacity }}
+                  className={`transition text-white rounded-full p-1 hover:bg-[#0003] ${isHorizontalSnap ? "mt-1" : "ml-1"}`}
                 >
                   <PageInfo width={16} height={16} />
                 </button>
                 <button
                   onclick={handleToggleInspect}
-                  style={{ transform: `scale(${scale})`, opacity }}
-                  className={`transition text-white rounded-full p-1 hover:bg-[#0003] ${toggleElementToVnode.value ? "bg-[#0003]" : ""}`}
+                  style={{ opacity }}
+                  className={`transition text-white rounded-full p-1 hover:bg-[#0003] ${inspectorEnabled ? "bg-[#0003]" : ""}`}
                 >
                   <SquareMouse width={16} height={16} />
                 </button>
@@ -116,7 +123,7 @@ export default function App() {
           <Flame />
         </button>
       </div>
-      {nodeInspection.value && (
+      {selectedApp && selectedNode && !popupWindow && (
         <div
           className="kaioken-devtools-embedded fixed will-change-transform"
           style={{

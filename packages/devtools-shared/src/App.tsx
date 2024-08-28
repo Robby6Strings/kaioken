@@ -1,28 +1,23 @@
-import { toggleElementToVnode, useDevtoolsStore } from "./store"
 import { SelectedNodeView } from "./components/SelectedNodeView"
 import { FiftyFiftySplitter } from "./components/FiftyFiftySplitter"
 import { AppView } from "./components/AppView"
 import { Select } from "./components/Select"
 import { SquareMouse } from "./icons/SquareMouse"
 import { kaiokenGlobal } from "./kaiokenGlobal"
+import { useDevtools } from "./store"
+import { useSyncExternalStore } from "kaioken"
+
+const dt = useDevtools()
+const dtGet = dt.peek.bind(dt)
+const dtSub = dt.subscribe.bind(dt)
 
 export function DevtoolsApp() {
-  const {
-    value: { apps, selectedApp, selectedNode },
-    setSelectedApp,
-    setSelectedNode,
-  } = useDevtoolsStore(({ apps, selectedApp, selectedNode }) => ({
-    apps,
-    selectedApp,
-    selectedNode,
-  }))
+  const { apps, selectedApp, selectedNode, inspectorEnabled } =
+    useSyncExternalStore(dtSub, dtGet)
 
-  const onInspectComponent = () => {
-    kaiokenGlobal?.emit(
-      // @ts-expect-error We have our own custom type here
-      "__kaiokenDevtoolsInspectElementValue",
-      { value: true }
-    )
+  const onToggleInspect = () => {
+    dt.value.inspectorEnabled = !dt.value.inspectorEnabled
+    dt.notify()
   }
 
   return (
@@ -36,12 +31,12 @@ export function DevtoolsApp() {
           ]}
           value={selectedApp?.name ?? ""}
           onChange={(name) =>
-            setSelectedApp(apps.find((a) => a.name === name)!)
+            (dt.value.selectedApp = apps.find((a) => a.name === name)!)
           }
         />
         <button
-          onclick={onInspectComponent}
-          className={`p-1 rounded ${toggleElementToVnode.value ? "bg-neutral-900" : ""}`}
+          onclick={onToggleInspect}
+          className={`p-1 rounded ${inspectorEnabled ? "bg-neutral-900" : ""}`}
         >
           <SquareMouse />
         </button>
@@ -52,7 +47,7 @@ export function DevtoolsApp() {
           <SelectedNodeView
             selectedApp={selectedApp}
             selectedNode={selectedNode}
-            setSelectedNode={setSelectedNode}
+            setSelectedNode={(n) => ((dt.value.selectedNode = n), dt.notify())}
             kaiokenGlobal={kaiokenGlobal}
           />
         )}

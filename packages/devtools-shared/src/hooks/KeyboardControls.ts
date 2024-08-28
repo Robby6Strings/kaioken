@@ -1,10 +1,14 @@
 import { useKeyStroke } from "@kaioken-core/hooks"
-import { inspectComponent, KeyboardMap } from "../signal"
-import { useDevtoolsStore } from "../store"
-import { useRef } from "kaioken"
+import { KeyboardMap } from "../keyboardMap"
+import { useRef, useSyncExternalStore } from "kaioken"
+import { useDevtools } from "../store"
+
+const dt = useDevtools()
+const dtGet = dt.peek.bind(dt)
+const dtSub = dt.subscribe.bind(dt)
 
 export const useKeyboardControls = () => {
-  const { setSelectedNode } = useDevtoolsStore((state) => state.selectedNode)
+  const dtStore = useSyncExternalStore(dtSub, dtGet)
   const searchRef = useRef<HTMLElement | null>(null)
 
   const getMetaDataFromNode = (domNode: Element | null) => {
@@ -24,7 +28,8 @@ export const useKeyboardControls = () => {
     domNode.scrollIntoView({
       behavior: "smooth",
     })
-    setSelectedNode(metaData.vNode as any)
+    dt.value.selectedNode = metaData.vNode as any
+    dt.notify()
   }
 
   const findNextSibling = (domNode: Element | null) => {
@@ -51,7 +56,10 @@ export const useKeyboardControls = () => {
   }
 
   useKeyStroke(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight"], (e) => {
-    if (inspectComponent.value) inspectComponent.value = null
+    if (dtStore.inspectNode) {
+      dt.value.inspectNode = null
+      dt.notify()
+    }
     if (
       document.activeElement &&
       document.activeElement instanceof HTMLInputElement &&

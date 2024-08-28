@@ -9,5 +9,3 @@ export const KeyboardMap = signal(
     }
   >()
 )
-
-export const inspectComponent = signal<Kaioken.VNode | null>(null)

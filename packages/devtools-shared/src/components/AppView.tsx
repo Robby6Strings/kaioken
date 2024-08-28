@@ -1,63 +1,43 @@
 import {
   AppContext,
   signal,
-  useCallback,
   useEffect,
   useRequestUpdate,
+  useSyncExternalStore,
 } from "kaioken"
-import { useDevtoolsStore, toggleElementToVnode } from "../store"
 import { NodeListItem } from "./NodeListItem"
 import { useKeyboardControls } from "../hooks/KeyboardControls"
-import { inspectComponent } from "../signal"
 import { SearchContext } from "../searchContext"
 import { kaiokenGlobal } from "../kaiokenGlobal"
+import { useDevtools } from "../store"
+
+const dt = useDevtools()
+const dtGet = dt.peek.bind(dt)
+const dtSub = dt.subscribe.bind(dt)
 
 export function AppView() {
-  const {
-    value: app,
-    setSelectedNode,
-    setSelectedApp,
-  } = useDevtoolsStore((state) => state.selectedApp)
+  const dtStore = useSyncExternalStore(dtSub, dtGet)
+
   const requestUpdate = useRequestUpdate()
   const search = signal("")
 
-  function handleUpdate(appCtx: AppContext) {
-    if (appCtx !== app) return
-    requestUpdate()
-  }
-
-  const handleInspecNode = useCallback(
-    (ctx: AppContext, vnode: Kaioken.VNode & { type: Function }) => {
-      setSelectedApp(ctx)
-      setSelectedNode(vnode as any)
-      inspectComponent.value = vnode
-      toggleElementToVnode.value = false
-      search.value = ""
-    },
-    [setSelectedApp, setSelectedNode]
-  )
-
   useEffect(() => {
-    kaiokenGlobal?.on("update", handleUpdate)
-    kaiokenGlobal?.on(
-      // @ts-expect-error
-      "__kaiokenDevtoolsInspectElementNode",
-      handleInspecNode
-    )
-
-    return () => {
-      kaiokenGlobal?.off("update", handleUpdate)
-      kaiokenGlobal?.off(
-        // @ts-expect-error
-        "__kaiokenDevtoolsInspectElementNode",
-        handleInspecNode
-      )
+    const handleUpdate = (appCtx: AppContext) => {
+      if (appCtx !== dtStore.selectedApp) return
+      requestUpdate()
     }
+    kaiokenGlobal?.on("update", handleUpdate)
+    return () => kaiokenGlobal?.off("update", handleUpdate)
   }, [])
 
-  useEffect(() => {
-    if (inspectComponent.value) inspectComponent.value = null
-  }, [search.value])
+  function handleSearchInput(txt: string) {
+    // if (dtStore.inspectNode) {
+    //   setInspectNode(null)
+    //   setInspectorEnabled(false)
+    // }
+
+    search.value = txt
+  }
 
   const { searchRef } = useKeyboardControls()
 
@@ -71,11 +51,13 @@ export function AppView() {
           placeholder="Search for component"
           type="text"
           value={search.value}
-          oninput={(e) => (search.value = e.target.value)}
+          oninput={(e) => handleSearchInput(e.target.value)}
         />
       </div>
       <SearchContext.Provider value={search.value}>
-        {app?.rootNode && <NodeListItem node={app.rootNode} />}
+        {dtStore.selectedApp?.rootNode && (
+          <NodeListItem node={dtStore.selectedApp.rootNode} />
+        )}
       </SearchContext.Provider>
     </div>
   )

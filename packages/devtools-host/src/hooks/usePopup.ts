@@ -1,5 +1,5 @@
-import { useCallback } from "kaioken"
-import { popup } from "../store"
+import { useDevtools } from "devtools-shared"
+import { useCallback, useSyncExternalStore } from "kaioken"
 
 type SavedSize = {
   width: number
@@ -8,12 +8,16 @@ type SavedSize = {
 
 const SIZE_STORAGE_KEY = "kaioken-devtools-popup-size"
 
-export const useDevTools = () => {
-  const _popup = popup.value
+const dt = useDevtools()
+const dtGet = dt.peek.bind(dt)
+const dtSub = dt.subscribe.bind(dt)
+
+export const usePopup = () => {
+  const { popupWindow } = useSyncExternalStore(dtSub, dtGet)
 
   const handleOpen = useCallback(
     (onOpened?: (window: Window) => void) => {
-      if (_popup) return _popup.focus()
+      if (popupWindow) return popupWindow.focus()
       const savedSize_raw = sessionStorage.getItem(SIZE_STORAGE_KEY)
       const size = savedSize_raw
         ? (JSON.parse(savedSize_raw) as SavedSize)
@@ -26,12 +30,14 @@ export const useDevTools = () => {
       if (!w) return console.error("[kaioken]: Unable to open devtools window")
 
       w.onload = () => {
-        popup.value = w
+        dt.value.popupWindow = w
+        dt.notify()
         console.debug("[kaioken]: devtools window opened")
         setTimeout(() => onOpened?.(w), 250)
         w.onbeforeunload = () => {
           console.debug("[kaioken]: devtools window closed")
-          popup.value = null
+          dt.value.popupWindow = null
+          dt.notify()
         }
       }
       w.onresize = () => {
@@ -44,7 +50,7 @@ export const useDevTools = () => {
         )
       }
     },
-    [_popup]
+    [popupWindow]
   )
 
   return handleOpen

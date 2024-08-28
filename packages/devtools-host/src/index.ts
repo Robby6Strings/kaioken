@@ -1,9 +1,10 @@
 import { mount } from "kaioken"
 import App from "./App"
 import tailwindCssKaiokenDevToolCssInline from "inline:./style.css"
-import { popup } from "./store"
+import { useDevtools } from "devtools-shared"
 ;(() => {
   if (!("window" in globalThis)) return
+  const dt = useDevtools()
   let hasMounted = false
   window.__kaioken?.on("mount", async () => {
     if (hasMounted) return
@@ -28,7 +29,7 @@ import { popup } from "./store"
       root,
       name: "kaioken.devtools",
     })
-    const handleMainWindowClose = () => popup.value?.close()
+    const handleMainWindowClose = () => dt.peek().popupWindow?.close()
     window.addEventListener("close", handleMainWindowClose)
     window.addEventListener("beforeunload", handleMainWindowClose)
   })

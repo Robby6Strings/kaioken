@@ -1,6 +1,13 @@
-import { useState, fragment, useMemo, useEffect, useRef } from "kaioken"
+import {
+  useState,
+  fragment,
+  useMemo,
+  useEffect,
+  useRef,
+  useSyncExternalStore,
+  useCallback,
+} from "kaioken"
 import { Chevron } from "../icons/Chevron"
-import { useDevtoolsStore } from "../store"
 import {
   getNodeName,
   isComponent,
@@ -8,8 +15,11 @@ import {
   nodeContainsNode,
   searchMatchesItem,
 } from "../utils"
-import { inspectComponent, KeyboardMap } from "../signal"
+import { KeyboardMap } from "../keyboardMap"
 import { useSearch } from "../searchContext"
+import { useDevtools } from "../store"
+
+const dt = useDevtools()
 
 export function NodeListItem({
   node,
@@ -18,14 +28,11 @@ export function NodeListItem({
   node: Kaioken.VNode
   traverseSiblings?: boolean
 }) {
-  const { value: selectedNode, setSelectedNode } = useDevtoolsStore(
-    (state) => state.selectedNode,
-    (prev, next) => {
-      return prev === node || next === node
-    }
-  )
+  const dtSub = useCallback(dt.subscribe.bind(dt), [])
+  const dtGet = useCallback(dt.peek.bind(dt), [])
+  const dtStore = useSyncExternalStore(dtSub, dtGet)
   const [collapsed, setCollapsed] = useState(true)
-  const isSelected = selectedNode === node
+  const isSelected = dtStore.selectedNode === node
   const ref = useRef<HTMLElement | null>(null)
   const id = useMemo(() => {
     return crypto.randomUUID()
@@ -33,9 +40,9 @@ export function NodeListItem({
   const search = useSearch()
 
   const isParentOfInspectNode = useMemo(() => {
-    if (inspectComponent.value == null) return null
-    return nodeContainsNode(node, inspectComponent.value)
-  }, [inspectComponent.value, node])
+    if (dtStore.inspectNode == null) return null
+    return nodeContainsNode(node, dtStore.inspectNode)
+  }, [dtStore.inspectNode, node])
 
   useEffect(() => {
     if (isParentOfInspectNode) {
@@ -76,8 +83,9 @@ export function NodeListItem({
         <h2
           ref={ref}
           onclick={() => {
-            inspectComponent.value = null
-            setSelectedNode(isSelected ? null : (node as any))
+            dt.value.inspectNode = null
+            dt.value.selectedNode = isSelected ? null : (node as any)
+            dt.notify()
           }}
           className={`flex gap-2 items-center cursor-pointer mb-1 scroll-m-12 ${isSelected ? "font-medium bg-crimson selected-vnode" : ""}`}
           data-id={id}
@@ -90,7 +98,8 @@ export function NodeListItem({
               onclick={(e) => {
                 e.preventDefault()
                 e.stopImmediatePropagation()
-                inspectComponent.value = null
+                dt.value.inspectNode = null
+                dt.notify()
                 setCollapsed((prev) => !prev)
               }}
             />

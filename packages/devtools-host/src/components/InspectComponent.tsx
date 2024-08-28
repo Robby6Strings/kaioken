@@ -4,31 +4,21 @@ import {
   useEventListener,
   useMouse,
 } from "@kaioken-core/hooks"
-import { AppContext, useEffect, useMemo, useRef } from "kaioken"
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "kaioken"
 import { getComponentVnodeFromElement, getNearestElm } from "../utils"
 import { vNodeContains } from "kaioken/utils"
-import { toggleElementToVnode, popup, nodeInspection } from "../store"
-//import { useDevTools } from "../hooks/useDevtools"
+import { useDevtools } from "devtools-shared"
 
-const emitSelectNode = (w: Window, elApp: AppContext, vnode: any) => {
-  window.__kaioken?.emit(
-    // @ts-expect-error we have our own custom event
-    "__kaiokenDevtoolsInspectElementNode",
-    elApp,
-    vnode
-  )
-  window.__kaioken?.emit(
-    // @ts-expect-error we have our own custom event
-    "__kaiokenDevtoolsInspectElementValue",
-    { enabled: false, sender: null }
-  )
-  w.focus()
-}
+const dt = useDevtools()
+const dtGet = dt.peek.bind(dt)
+const dtSub = dt.subscribe.bind(dt)
+//import { useDevTools } from "../hooks/useDevtools"
 
 // open and send: openDevTools((w) => emitSelectNode(w, elApp, vnode))
 
 export const InspectComponent: Kaioken.FC = () => {
   //const openDevTools = useDevTools()
+  const { inspectorEnabled, popupWindow } = useSyncExternalStore(dtSub, dtGet)
   const { mouse } = useMouse()
 
   const controls = useElementByPoint({
@@ -36,7 +26,7 @@ export const InspectComponent: Kaioken.FC = () => {
     y: mouse.y,
     immediate: false,
   })
-  const element = toggleElementToVnode.value ? controls.element : null
+  const element = inspectorEnabled ? controls.element : null
 
   const elApp = useMemo(() => {
     if (element && window.__kaioken) {
@@ -64,12 +54,12 @@ export const InspectComponent: Kaioken.FC = () => {
   const bounding = useElementBounding(boundingRef)
 
   useEffect(() => {
-    if (toggleElementToVnode.value) {
+    if (inspectorEnabled) {
       controls.start()
     } else {
       controls.stop()
     }
-  }, [toggleElementToVnode.value])
+  }, [inspectorEnabled])
 
   useEffect(() => {
     if (vnode && element) {
@@ -80,12 +70,16 @@ export const InspectComponent: Kaioken.FC = () => {
   }, [vnode, element])
 
   useEventListener("click", (e) => {
-    if (!toggleElementToVnode.value) return
+    if (!inspectorEnabled) return
     if (!vnode || !elApp) return
     e.preventDefault()
-    if (popup.value) return emitSelectNode(popup.value, elApp, vnode)
-    nodeInspection.value = { node: vnode, app: elApp }
-    toggleElementToVnode.value = false
+    dt.value.selectedApp = elApp
+    dt.value.selectedNode = vnode
+    dt.value.inspectNode = vnode
+    dt.value.inspectorEnabled = false
+    dt.notify()
+
+    if (popupWindow) popupWindow.focus()
   })
 
   return (

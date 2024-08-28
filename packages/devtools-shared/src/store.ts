@@ -1,67 +1,59 @@
-import { AppContext, createStore, signal } from "kaioken"
+import { AppContext, signal } from "kaioken"
 import { isDevtoolsApp } from "./utils"
 import { kaiokenGlobal } from "./kaiokenGlobal"
-
-export const toggleElementToVnode = signal(false)
-kaiokenGlobal?.on(
-  // @ts-expect-error We have our own custom type here
-  "__kaiokenDevtoolsInspectElementValue",
-  // @ts-expect-error We have our own custom type here
-  ({ value }) => {
-    toggleElementToVnode.value = !!value
-  }
-)
 
 const initialApps = (kaiokenGlobal?.apps ?? []).filter(
   (app) => !isDevtoolsApp(app)
 )
 const initialApp = (initialApps[0] ?? null) as AppContext | null
 
-export const useDevtoolsStore = createStore(
-  {
-    apps: initialApps,
-    selectedElement: null as Element | null,
-    selectedApp: initialApp,
-    selectedNode: null as (Kaioken.VNode & { type: Function }) | null,
-    popupWindow: null as Window | null,
-  },
-  (set) => ({
-    addApp: (app: AppContext) => {
-      set((state) => ({ ...state, apps: [...state.apps, app] }))
-    },
-    setApps: (apps: Array<AppContext>) => {
-      set((state) => ({ ...state, apps }))
-    },
-    removeApp: (app: AppContext) => {
-      set((state) => ({ ...state, apps: state.apps.filter((a) => a !== app) }))
-    },
-    setSelectedElement: (element: Element | null) => {
-      set((state) => ({ ...state, selectedElement: element }))
-    },
-    setSelectedApp: (app: AppContext | null) => {
-      set((state) => ({ ...state, selectedApp: app }))
-    },
-    setSelectedNode: (node: (Kaioken.VNode & { type: Function }) | null) => {
-      set((state) => ({ ...state, selectedNode: node }))
-    },
-  })
-)
+declare global {
+  interface Window {
+    __kaiokenDevtoolsState: typeof dt
+  }
+}
 
-kaiokenGlobal?.on("mount", (app) => {
-  if (!isDevtoolsApp(app)) {
-    useDevtoolsStore.methods.addApp(app)
-    const selected = useDevtoolsStore.getState().selectedApp
-    if (!selected) {
-      useDevtoolsStore.methods.setSelectedApp(app)
-    }
-  }
+type DevtoolsState = {
+  apps: typeof initialApps
+  selectedApp: typeof initialApp
+  selectedNode: (Kaioken.VNode & { type: Function }) | null
+  popupWindow: Window | null
+  inspectorEnabled: boolean
+  inspectNode: (Kaioken.VNode & { type: Function }) | null
+}
+
+const dt = signal<DevtoolsState>({
+  apps: initialApps,
+  selectedApp: initialApp,
+  selectedNode: null as (Kaioken.VNode & { type: Function }) | null,
+  popupWindow: null as Window | null,
+  inspectorEnabled: false,
+  inspectNode: null as (Kaioken.VNode & { type: Function }) | null,
 })
-kaiokenGlobal?.on("unmount", (app) => {
-  useDevtoolsStore.methods.removeApp(app)
-  let nextSelected: AppContext | null = useDevtoolsStore.getState().selectedApp
-  if (nextSelected === app) {
-    const apps = useDevtoolsStore.getState().apps
-    nextSelected = apps.length > 0 ? apps[0] : null
+if ("window" in globalThis) {
+  if (!window.opener) {
+    window.__kaiokenDevtoolsState = dt
+    kaiokenGlobal?.on("mount", (app) => {
+      if (!isDevtoolsApp(app)) {
+        dt.value.apps.push(app)
+        dt.value.selectedApp ??= app
+        dt.notify()
+      }
+    })
+    kaiokenGlobal?.on("unmount", (app) => {
+      dt.value.apps = dt.value.apps.filter((a) => a !== app)
+      let nextSelected: AppContext | null = dt.value.selectedApp
+      if (nextSelected === app) {
+        const apps = dt.value.apps
+        nextSelected = apps.length > 0 ? apps[0] : null
+      }
+      dt.notify()
+    })
+  } else {
+    ;(window.opener as typeof window).__kaiokenDevtoolsState.subscribe(
+      (s) => (dt.value = s)
+    )
   }
-  useDevtoolsStore.methods.setSelectedApp(nextSelected)
-})
+}
+
+export const useDevtools = () => dt

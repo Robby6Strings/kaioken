@@ -5,6 +5,7 @@ import esbuildPluginInlineImport from "esbuild-plugin-inline-import"
 await esbuild
   .context({
     ...options,
+    minify: false,
     plugins: [
       esbuildPluginInlineImport({
         transform: esbuildPluginTransform,
