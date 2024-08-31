@@ -1,5 +1,6 @@
 import { createElement } from "./element.js"
 import { useRef } from "./hooks/useRef.js"
+import { Signal } from "./signal.js"
 
 function _arePropsEqual<T extends Record<string, unknown>>(
   prevProps: T,
@@ -21,10 +22,13 @@ export function memo<Props extends Record<string, unknown>>(
     nextProps: Props
   ) => boolean = _arePropsEqual
 ): (props: Props) => JSX.Element {
-  const _fn = function (props: Props) {
+  const _fn = (props: Props) => {
     const prevProps = useRef<Props | null>(null)
     const node = useRef<Kaioken.VNode | null>(null)
 
+    if (prevProps.current) {
+      console.log({ old: prevProps.current, new: props, node: node.current })
+    }
     if (
       node.current &&
       prevProps.current &&
@@ -39,7 +43,7 @@ export function memo<Props extends Record<string, unknown>>(
     if (!node.current) {
       node.current = createElement(fn, props)
     } else {
-      Object.assign(node.current.props, props)
+      node.current.props = props
     }
     node.current.frozen = false
     return node.current
