@@ -343,7 +343,6 @@ function updateFromMap(
     if (oldChild) {
       oldChild.effectTag = EFFECT_TAG.UPDATE
       // TODO: this is where it's swapping the props by key
-      console.log(oldChild, newChild)
       oldChild.props = newChild.props
       if ("frozen" in newChild) oldChild.frozen = newChild.frozen
       oldChild.sibling = undefined
