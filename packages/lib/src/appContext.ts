@@ -25,8 +25,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   hookIndex = 0
   root?: HTMLElement
   mounted = false
-  promiseId = 0
-  selfPromiseResolver: undefined | [(ctx: AppContext<T>) => void, number]
 
   constructor(
     private appFunc: (props: T) => JSX.Element,
@@ -41,7 +39,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   mount() {
     return new Promise<AppContext<T>>((resolve) => {
       if (this.mounted) return resolve(this)
-      this.selfPromiseResolver = [resolve, this.promiseId++]
       this.scheduler = new Scheduler(this, this.options?.maxFrameMs ?? 50)
       if (renderMode.current === "hydrate") {
         hydrationStack.captureEvents(this.root!, this.scheduler)
@@ -65,7 +62,6 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       this.scheduler.nextIdle(() => {
         this.mounted = true
         window.__kaioken?.emit("mount", this as AppContext<any>)
-        this.selfPromiseResolver = undefined
         resolve(this)
       })
     })
@@ -75,11 +71,9 @@ export class AppContext<T extends Record<string, unknown> = {}> {
     return new Promise<AppContext<T>>((resolve) => {
       if (!this.mounted) return resolve(this)
       if (!this.rootNode?.child) return resolve(this)
-      this.selfPromiseResolver = [resolve, this.promiseId++]
       this.requestDelete(this.rootNode.child)
 
       this.scheduler?.nextIdle(() => {
-        this.selfPromiseResolver = undefined
         this.scheduler = undefined
         this.rootNode && (this.rootNode.child = undefined)
         this.mounted = false
@@ -96,17 +90,7 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       throw new Error(
         "[kaioken]: failed to apply new props - ensure the app is mounted"
       )
-    if (this.selfPromiseResolver) {
-      const [_promise, _pid] = this.selfPromiseResolver
-      console.debug("[kaioken]: early resolving promise", _pid)
-      _promise(this)
-      this.selfPromiseResolver = undefined
-    }
-    const pId = this.promiseId++
-    let didResolve = false
     return new Promise<AppContext<T>>((resolve) => {
-      this.selfPromiseResolver = [resolve, pId]
-      console.debug("[kaioken]: applying new props", pId)
       scheduler.clear()
       const { children, ref, key, ...rest } = rootChild.props
       rootChild.props = {
@@ -117,21 +101,8 @@ export class AppContext<T extends Record<string, unknown> = {}> {
       }
       scheduler.queueUpdate(rootChild)
       scheduler.nextIdle(() => {
-        this.selfPromiseResolver = undefined
-        didResolve = true
-        console.debug("[kaioken]: props applied", pId)
         resolve(this)
       })
-      setTimeout(() => {
-        if (!didResolve) {
-          console.error(
-            "[kaioken]: failed to apply new props in lt 500ms",
-            pId,
-            this
-          )
-          debugger
-        }
-      }, 2000)
     })
   }
 
