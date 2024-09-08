@@ -5,7 +5,7 @@ export default {
     keyof PageContextServer
   >,
   clientRouting: true,
-  hydrationCanBeAborted: true,
+  //hydrationCanBeAborted: true,
   meta: {
     title: {
       env: { server: true, client: true },

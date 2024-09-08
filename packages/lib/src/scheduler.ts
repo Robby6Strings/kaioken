@@ -92,7 +92,7 @@ export class Scheduler {
     this.deletions = []
     this.frameDeadline = 0
     this.pendingCallback = undefined
-    this.isRunning = false
+    this.sleep(true)
   }
 
   wake() {
@@ -101,8 +101,8 @@ export class Scheduler {
     this.requestIdleCallback(this.workLoop.bind(this))
   }
 
-  sleep() {
-    if (!this.isRunning) return
+  sleep(force = false) {
+    if (!this.isRunning && !force) return
     this.isRunning = false
     if (this.frameHandle !== null) {
       globalThis.cancelAnimationFrame(this.frameHandle)
