@@ -1,5 +1,7 @@
 import { disableAnimation } from "$/utils/disableAnimation"
-import { useElementBounding, useMouse, useTweenMemo } from "@kaioken-core/hooks"
+import { useElementBounding } from "$/hooks-mock/useElementBounding"
+import { useMouse } from "$/hooks-mock/useMouse"
+import { useTweenMemo } from "$/hooks-mock/useTweenMemo"
 import { useMemo, useRef } from "kaioken"
 
 function minAbs(x: number, y: number, old: number) {

@@ -1,6 +1,6 @@
 import { Button } from "$/components/Button"
 import { DemoContainer } from "$/components/DemoContainer"
-import { useKeyStroke } from "@kaioken-core/hooks"
+import { useKeyStroke } from "$/hooks-mock/useKeyStroke"
 import { signal } from "kaioken"
 
 const transformKeys = (key: string) => {

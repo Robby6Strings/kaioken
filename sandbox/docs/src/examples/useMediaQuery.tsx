@@ -1,5 +1,5 @@
 import { DemoContainer } from "$/components/DemoContainer"
-import { useMediaQuery } from "@kaioken-core/hooks"
+import { useMediaQuery } from "$/hooks-mock/useMediaQuery"
 
 export const UseMediaQueryExample = () => {
   const [isLargerThanPixels] = useMediaQuery("(min-width: 684px)")

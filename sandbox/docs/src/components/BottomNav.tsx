@@ -1,5 +1,5 @@
 import { getPrevAndNextRoute } from "$/utils/meta"
-import { useTweenMemo } from "@kaioken-core/hooks"
+import { useTweenMemo } from "$/hooks-mock/useTweenMemo"
 import { signal, useMemo } from "kaioken"
 import { twMerge } from "tailwind-merge"
 import { sineInOut } from "@kaioken-core/hooks/easing"

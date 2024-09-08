@@ -1,6 +1,7 @@
 import { signal, useEffect, useRef } from "kaioken"
 import { CommandPalette } from "./CommandPallete"
-import { useClickOutside, useKeyUp } from "@kaioken-core/hooks"
+import { useClickOutside } from "$/hooks-mock/useClickOutside"
+import { useKeyUp } from "$/hooks-mock/useKeyStroke"
 import { usePageContext } from "$/context/pageContext"
 
 export const CMD = () => {
