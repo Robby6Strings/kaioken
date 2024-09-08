@@ -50,6 +50,8 @@ function fireEffects(tree: VNode, immediate?: boolean) {
   while (arr?.length) arr.shift()!()
 }
 
+const tickSet = new Set<number>()
+
 export class Scheduler {
   private nextUnitOfWork: VNode | undefined = undefined
   private treesInProgress: VNode[] = []
@@ -66,6 +68,8 @@ export class Scheduler {
   private isRenderDirtied = false
   private consecutiveDirtyCount = 0
   private fatalError = ""
+  private tickId = 0
+  private loopTimerInterval = -1
   //private lastUpdateRequester: VNode | null = null
 
   constructor(
@@ -93,6 +97,7 @@ export class Scheduler {
     this.deletions = []
     this.frameDeadline = 0
     this.pendingCallback = undefined
+    this.isRunning = false
     //this.lastUpdateRequester = null
   }
 
@@ -106,6 +111,7 @@ export class Scheduler {
     if (!this.isRunning) return
     this.isRunning = false
     if (this.frameHandle !== null) {
+      console.log("[kaioken]: sleep - cancelAnimationFrame", this.frameHandle)
       globalThis.cancelAnimationFrame(this.frameHandle)
       this.frameHandle = null
     }
@@ -126,11 +132,11 @@ export class Scheduler {
 
     if (node.current === vNode) {
       this.isRenderDirtied = true
-      return
+      return this.wake()
     }
 
     if (this.nextUnitOfWork === vNode) {
-      return
+      return this.wake()
     }
 
     if (this.nextUnitOfWork === undefined) {
@@ -168,7 +174,7 @@ export class Scheduler {
           // already processed tree, create new tree with the node
           this.treesInProgress.push(vNode)
         }
-        return
+        return this.wake()
       }
     }
 
@@ -207,9 +213,10 @@ export class Scheduler {
         }
       }
     }
-    if (didNodeUsurp) return
+    if (didNodeUsurp) return this.wake()
     // node is not a child or parent of any queued trees, queue new tree
     this.treesInProgress.push(vNode)
+    return this.wake()
   }
 
   queueDelete(vNode: VNode) {
@@ -238,8 +245,34 @@ export class Scheduler {
     )
   }
 
+  private onLoopStart() {
+    const tId = this.tickId++
+    if (tId === 0) return
+    console.debug("[kaioken]: loop start", tId)
+    tickSet.add(tId)
+    let duration = 0
+    this.loopTimerInterval = window.setInterval(() => {
+      if (!tickSet.has(tId)) {
+        return window.clearInterval(this.loopTimerInterval)
+      }
+      duration += 10
+      if (duration > 200) {
+        console.debug("[kaioken]: loop took > 200ms", tId)
+        window.clearInterval(this.loopTimerInterval)
+        debugger
+      }
+    }, 10)
+  }
+
+  private onLoopEnd() {
+    console.debug("[kaioken]: loop end", this.tickId - 1)
+    tickSet.delete(this.tickId - 1)
+  }
+
   private workLoop(deadline?: IdleDeadline): void {
     //this.lastUpdateRequester = null
+    this.onLoopEnd()
+    this.onLoopStart()
     ctx.current = this.appCtx
     let shouldYield = false
     while (this.nextUnitOfWork && !shouldYield) {
@@ -287,13 +320,14 @@ export class Scheduler {
     }
 
     if (!this.nextUnitOfWork) {
+      window.clearInterval(this.loopTimerInterval)
+      this.onLoopEnd()
       this.sleep()
       while (this.nextIdleEffects.length) {
         this.nextIdleEffects.shift()!(this)
       }
       return
     }
-
     this.requestIdleCallback(this.workLoop.bind(this))
   }
 
@@ -303,6 +337,7 @@ export class Scheduler {
       this.pendingCallback = callback
       this.channel.port1.postMessage(null)
     })
+    console.log("[kaioken]: requestAnimationFrame", this.frameHandle)
   }
 
   private performUnitOfWork(vNode: VNode): VNode | void {

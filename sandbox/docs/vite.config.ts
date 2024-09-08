@@ -30,6 +30,17 @@ export default defineConfig({
     exclude: ["kaioken"],
   },
 
+  build: {
+    minify: false,
+    sourcemap: false,
+  },
+
+  esbuild: {
+    sourcemap: false,
+    // @ts-ignore
+    minify: false,
+  },
+
   plugins: [
     {
       enforce: "pre",
