@@ -1,0 +1,17 @@
+import { UseWindowPositionExample } from "$/examples/useWindowPosition"
+
+# useWindowPosition
+
+provides the current location of the window on the users monitor
+
+## Demo
+
+<UseWindowPositionExample />
+
+## Usage
+
+```tsx twoslash
+import { useWindowPosition } from "@kaioken-core/hooks"
+// ---cut---
+const { screenX, screenY } = useWindowPosition()
+```

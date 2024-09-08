@@ -1,0 +1,122 @@
+.prose
+  :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)):not(
+    pre.shiki > code
+  ) {
+  background-color: #2f2f2f !important;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 400;
+}
+
+.prose
+  :where(code):not(
+    :where([class~="not-prose"], [class~="not-prose"] *)
+  ):before {
+  content: "";
+}
+
+.prose
+  :where(code):not(
+    :where([class~="not-prose"], [class~="not-prose"] *)
+  )::after {
+  content: "";
+}
+
+pre.shiki {
+  font-weight: 400;
+  font-size: 0.85rem;
+  line-height: 1.7142857;
+  border-radius: 0.35rem;
+  background: rgba(25, 18, 18, 0.8) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 1rem;
+  width: 100%;
+  overflow-x: auto;
+}
+
+pre.shiki > code {
+  background-color: unset;
+}
+
+/** strings */
+pre.shiki span[style="color:#9ECBFF;"],
+pre.shiki span[style="color: rgb(158, 203, 255);"] {
+  color: #fde3e3 !important;
+}
+
+/** variables/literals */
+pre.shiki span[style="color:#79B8FF;"],
+pre.shiki span[style="color: rgb(121, 184, 255);"] {
+  color: #f0a05e !important;
+}
+
+/** XML element tags */
+pre.shiki span[style="color:#85E89D;"],
+pre.shiki span[style="color: rgb(133, 232, 157);"] {
+  color: #e8585c !important;
+}
+
+pre.shiki span.line.diff.remove {
+  background-color: #512525;
+}
+
+pre.shiki span.line.diff.remove:before {
+  content: "-";
+  line-height: 1.25rem;
+  position: absolute;
+  margin-left: 10px;
+  color: red;
+}
+
+pre.shiki span.line.diff.add {
+  background-color: #174327;
+}
+
+pre.shiki span.line.diff.add:before {
+  content: "+";
+  line-height: 1.25rem;
+  position: absolute;
+  margin-left: 10px;
+  color: #1fc31f;
+}
+
+.not-prose pre.shiki {
+  border-radius: 0 0 0.35rem 0.35rem;
+}
+
+.not-prose pre.shiki {
+  overflow-x: auto;
+  padding-top: 0.8571429em;
+  padding-inline-end: 1.1428571em;
+  padding-bottom: 0.8571429em;
+  padding-inline-start: 1.1428571em;
+}
+
+.twoslash-popup-code,
+.twoslash-popup-docs {
+  display: none;
+  position: absolute;
+  max-width: 600px;
+  text-wrap: wrap;
+  width: max-content;
+
+  padding: 1rem;
+  background: black;
+  margin: 0;
+}
+
+.twoslash-popup-code *,
+.twoslash-popup-docs * {
+  text-wrap: wrap;
+}
+
+.twoslash-hover {
+  text-decoration: underline;
+}
+
+.twoslash-hover:hover .twoslash-popup-code {
+  display: block;
+}

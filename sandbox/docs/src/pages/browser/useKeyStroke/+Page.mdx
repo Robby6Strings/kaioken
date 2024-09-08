@@ -1,0 +1,31 @@
+import { UseKeyStrokeExample } from "$/examples/useKeyStroke"
+
+# useKeyStroke
+
+fires callback when a key is pressed
+
+## Demo
+
+<UseKeyStrokeExample />
+
+## Usage
+
+```tsx twoslash
+import { useKeyStroke } from "@kaioken-core/hooks"
+// ---cut---
+useKeyStroke(true, (e) => {
+  // code goes here
+})
+```
+
+## Type Declaration
+
+```tsx
+type KeyStrokeEventName = "keydown" | "keypress" | "keyup"
+
+type KeyOptions = {
+  eventName?: KeyStrokeEventName
+  ref?: (() => EventTarget | null) | null
+  passive?: boolean
+}
+```

@@ -1,0 +1,23 @@
+import { UseStartTypingExample } from "$/examples/useStartTyping"
+
+# useStartTyping
+
+callback will be fired when you start typing on a non editable element
+
+## Demo
+
+<UseStartTypingExample />
+
+## Usage
+
+```tsx twoslash
+import { useRef } from "kaioken"
+import { useStartTyping } from "@kaioken-core/hooks"
+const inputRef = useRef<HTMLInputElement | null>(null)
+// ---cut---
+useStartTyping(() => {
+  if (inputRef.current) {
+    inputRef.current.focus()
+  }
+})
+```

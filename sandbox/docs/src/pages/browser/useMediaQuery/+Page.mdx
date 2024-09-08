@@ -1,0 +1,17 @@
+import { UseMediaQueryExample } from "$/examples/useMediaQuery"
+
+# useMediaQuery
+
+Reactive Media Query. Will query and give you back a reactive boolean if that media query passed or not
+
+## Demo
+
+<UseMediaQueryExample />
+
+## Usage
+
+```tsx twoslash
+import { useMediaQuery } from "@kaioken-core/hooks"
+// ---cut---
+const [isLargerThanPixels] = useMediaQuery("(min-width: 684px)")
+```

@@ -1,0 +1,36 @@
+import { UseRafFnExample } from "$/examples/useRafFn"
+
+# useRafFn
+
+Call the function on every request animation frame with the ability to pause and play
+
+## Demo
+
+<UseRafFnExample />
+
+## Usage
+
+```tsx
+const [count, setCount] = useState(0)
+const [delta, setDelta] = useState(0)
+const controls = useRafFn(
+  ({ delta }) => {
+    setCount(($count) => $count + 1)
+    setDelta(delta)
+  },
+  {
+    fpsLimit: 60,
+    immediate: true,
+  }
+)
+```
+
+## Type declaration
+
+```tsx twoslash
+import { useRafFn } from "@kaioken-core/hooks"
+const controls = useRafFn((options) => {}, {
+  fpsLimit: undefined,
+  immediate: false,
+})
+```

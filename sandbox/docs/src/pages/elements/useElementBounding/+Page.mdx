@@ -1,0 +1,19 @@
+import { UseBoundingElementExample } from "$/examples/useBoundingElement"
+
+# useElementBounding
+
+reactive bounding box of any element
+
+## Demo
+
+<UseBoundingElementExample />
+
+## Usage
+
+```tsx twoslash
+import { useRef } from "kaioken"
+import { useElementBounding } from "@kaioken-core/hooks"
+// ---cut---
+const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
+const bounding = useElementBounding(textAreaRef)
+```
