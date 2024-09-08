@@ -5,6 +5,7 @@ import { renderPage } from "vike/server"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+/** process.env.NODE_ENV === "production" */
 const isProduction = process.env.NODE_ENV === "production"
 const root = resolve(__dirname, "..")
 
