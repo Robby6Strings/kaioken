@@ -128,10 +128,10 @@ export class AppContext<T extends Record<string, unknown> = {}> {
   }
 
   queueEffect(vNode: VNode, effect: Function) {
-    this.scheduler?.queueEffect(vNode, effect)
+    ;(vNode.effects ??= []).push(effect)
   }
 
   queueImmediateEffect(vNode: VNode, effect: Function) {
-    this.scheduler?.queueImmediateEffect(vNode, effect)
+    ;(vNode.immediateEffects ??= []).push(effect)
   }
 }
