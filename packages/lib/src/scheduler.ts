@@ -1,11 +1,6 @@
 import type { AppContext } from "./appContext"
 import { bitmapOps } from "./bitmap.js"
-import {
-  CONSECUTIVE_DIRTY_LIMIT,
-  contextProviderSymbol,
-  FLAG,
-  fragmentSymbol,
-} from "./constants.js"
+import { CONSECUTIVE_DIRTY_LIMIT, FLAG } from "./constants.js"
 import { commitWork, createDom, hydrateDom } from "./dom.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
@@ -13,10 +8,14 @@ import { ctx, node, nodeToCtxMap, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { assertValidElementProps } from "./props.js"
 import { reconcileChildren } from "./reconciler.js"
-import { postOrderApply, traverseApply, vNodeContains } from "./utils.js"
+import {
+  isExoticVNode,
+  postOrderApply,
+  traverseApply,
+  vNodeContains,
+} from "./utils.js"
 
 type VNode = Kaioken.VNode
-type FunctionNode = VNode & { type: (...args: any) => any }
 
 let isRenderDirtied = false
 
@@ -288,18 +287,9 @@ function performUnitOfWork(
   if (!skip) {
     try {
       if (typeof vNode.type === "function") {
-        updateFunctionComponent(appCtx, vNode as FunctionNode)
-      } else if (
-        vNode.type === fragmentSymbol ||
-        vNode.type === contextProviderSymbol
-      ) {
-        vNode.child =
-          reconcileChildren(
-            appCtx,
-            vNode,
-            vNode.child || null,
-            vNode.props.children
-          ) || undefined
+        updateFunctionComponent(appCtx, vNode as FunctionVNode)
+      } else if (isExoticVNode(vNode)) {
+        updateExoticComponent(appCtx, vNode)
       } else {
         updateHostComponent(appCtx, vNode)
       }
@@ -347,7 +337,7 @@ function performUnitOfWork(
   }
 }
 
-function updateFunctionComponent(appCtx: AppContext, vNode: FunctionNode) {
+function updateFunctionComponent(appCtx: AppContext, vNode: FunctionVNode) {
   try {
     node.current = vNode
     nodeToCtxMap.set(vNode, appCtx)
@@ -372,6 +362,16 @@ function updateFunctionComponent(appCtx: AppContext, vNode: FunctionNode) {
   } finally {
     node.current = undefined
   }
+}
+
+function updateExoticComponent(appCtx: AppContext, vNode: ExoticVNode) {
+  vNode.child =
+    reconcileChildren(
+      appCtx,
+      vNode,
+      vNode.child || null,
+      vNode.props.children
+    ) || undefined
 }
 
 function updateHostComponent(appCtx: AppContext, vNode: VNode) {
