@@ -1,8 +1,8 @@
-import { __DEV__ } from "./env.js"
-import { KaiokenError } from "./error.js"
-import { renderMode } from "./globals.js"
-import { useVNode } from "./hooks/utils.js"
-import { getVNodeAppContext, isVNode } from "./utils.js"
+import { __DEV__ } from "../env.js"
+import { KaiokenError } from "../error.js"
+import { renderMode } from "../globals.js"
+import { useVNode } from "../hooks/utils.js"
+import { getVNodeAppContext, isVNode } from "../utils.js"
 
 export { Portal, isPortal }
 

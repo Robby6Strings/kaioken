@@ -200,6 +200,7 @@ declare global {
       prevStyleStr?: string
       prevStyleObj?: StyleObject
       hmrUpdated?: boolean
+      handleThrow?: (error: unknown) => boolean
     }
   }
 

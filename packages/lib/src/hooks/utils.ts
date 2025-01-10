@@ -12,10 +12,19 @@ export {
   useHookDebugGroup,
   useHookHMRInvalidation,
   useRequestUpdate,
+  useThrowHandler,
   HookDebugGroupAction,
   type Hook,
   type HookCallback,
   type HookCallbackState,
+}
+
+function useThrowHandler(callback: (error: unknown) => boolean) {
+  const vNode = node.current
+  if (!vNode) {
+    error_hookMustBeCalledTopLevel("useThrowHandler")
+  }
+  vNode.handleThrow = callback
 }
 
 type DevHook<T> = Hook<T> & {

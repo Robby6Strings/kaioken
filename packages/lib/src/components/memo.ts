@@ -1,6 +1,6 @@
-import { createElement } from "./element.js"
-import { useRef } from "./hooks/useRef.js"
-import { useVNode } from "./hooks/utils.js"
+import { createElement } from "../element.js"
+import { useRef } from "../hooks/useRef.js"
+import { useVNode } from "../hooks/utils.js"
 
 function _arePropsEqual<T extends Record<string, unknown>>(
   prevProps: T,

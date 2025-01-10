@@ -12,6 +12,7 @@ import {
 } from "kaioken"
 import { SignalsExample } from "./components/SignalsExample"
 import { UseAsyncExample } from "./components/UseAsyncExample"
+import { SuspenseExample } from "./components/SuspenseExample"
 
 type AppRoute = {
   title: string
@@ -133,6 +134,10 @@ const ROUTES: Record<string, AppRoute> = {
     component: lazy(() =>
       import("./components/StoreExample").then((m) => m.StoreExample)
     ),
+  },
+  "/suspense-example": {
+    title: "Suspense",
+    component: SuspenseExample,
   },
   "/transitions-example": {
     title: "Transitions",

@@ -267,26 +267,20 @@ export class Scheduler {
           this.updateHostComponent(vNode)
         }
       } catch (error) {
-        window.__kaioken?.emit(
-          "error",
-          this.appCtx,
-          error instanceof Error ? error : new Error(String(error))
-        )
-        if (KaiokenError.isKaiokenError(error)) {
-          if (error.customNodeStack) {
-            setTimeout(() => {
-              throw new Error(error.customNodeStack)
-            })
+        const handlerNode = this.handleThrowDuringUpdate(vNode, error)
+        if (handlerNode) {
+          /**
+           * if a node handles the error, we need to requeue it. If that node is a
+           * parent of the current tree, we need to replace the current tree with it.
+           */
+          if (
+            handlerNode.depth <
+            this.treesInProgress[this.currentTreeIndex].depth
+          ) {
+            this.treesInProgress[this.currentTreeIndex] = handlerNode
           }
-          if (error.fatal) {
-            throw error
-          }
-          console.error(error)
-          return
+          return handlerNode
         }
-        setTimeout(() => {
-          throw error
-        })
       }
       if (vNode.child) {
         if (renderMode.current === "hydrate" && vNode.dom) {
@@ -392,5 +386,47 @@ export class Scheduler {
 
   private flushEffects(effectArr: Function[]) {
     while (effectArr.length) effectArr.shift()!()
+  }
+
+  private handleThrowDuringUpdate(vNode: VNode, error: unknown): VNode | void {
+    let err = error
+    try {
+      let node: VNode | undefined = vNode
+      while (node) {
+        if (node.handleThrow) {
+          if (node.handleThrow(error)) return node
+        }
+        node = node.parent
+      }
+    } catch (error) {
+      error = new KaiokenError({
+        message:
+          "An error occurred while handling an error. This is likely a bug in Kaioken.",
+        vNode,
+        fatal: true,
+      })
+      ;(error as Error).cause = err
+    }
+
+    window.__kaioken?.emit(
+      "error",
+      this.appCtx,
+      error instanceof Error ? error : new Error(String(error))
+    )
+    if (KaiokenError.isKaiokenError(error)) {
+      if (error.customNodeStack) {
+        setTimeout(() => {
+          throw new Error(error.customNodeStack)
+        })
+      }
+      if (error.fatal) {
+        throw error
+      }
+      console.error(error)
+      return
+    }
+    setTimeout(() => {
+      throw error
+    })
   }
 }

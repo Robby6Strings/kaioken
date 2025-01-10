@@ -13,7 +13,7 @@ import { Signal, unwrap } from "./signals/index.js"
 import { ctx, renderMode } from "./globals.js"
 import { hydrationStack } from "./hydration.js"
 import { StyleObject } from "./types.dom.js"
-import { isPortal } from "./portal.js"
+import { isPortal } from "./components/portal.js"
 import { __DEV__ } from "./env.js"
 import { KaiokenError } from "./error.js"
 import { bitmapOps } from "./bitmap.js"
@@ -449,26 +449,26 @@ function placeDom(
 
     const siblingCheckpoints: VNode[] = []
     while (child && currentParent.depth >= mntParent.depth) {
-        /**
+      /**
        * keep track of siblings we've passed for later,
        * as long as they're within bounds.
-         */
+       */
       if (child.sibling && rBounds.indexOf(child) === -1) {
-          siblingCheckpoints.push(child.sibling)
-        }
+        siblingCheckpoints.push(child.sibling)
+      }
       // downwards traversal
       if (!isPortal(child) && dBounds.indexOf(child) === -1) {
         dBounds.push(child)
-          const dom = child.dom
-          // traverse downwards if no dom for this child
+        const dom = child.dom
+        // traverse downwards if no dom for this child
         if (!dom && child.child) {
-            currentParent = child
-            child = currentParent.child!
-            continue
-          }
+          currentParent = child
+          child = currentParent.child!
+          continue
+        }
         // dom found, we can continue up/right traversal
-          if (dom?.isConnected) {
-            prevDom = dom
+        if (dom?.isConnected) {
+          prevDom = dom
         }
       }
 

@@ -1,6 +1,6 @@
-import { createElement } from "./element.js"
-import { renderMode } from "./globals.js"
-import { useRequestUpdate } from "./hooks/utils.js"
+import { createElement } from "../element.js"
+import { renderMode } from "../globals.js"
+import { useRequestUpdate } from "../hooks/utils.js"
 
 type FCModule = { default: Kaioken.FC<any> }
 type LazyImportValue = Kaioken.FC<any> | FCModule
